@@ -76,14 +76,14 @@ test("origin enforcement and persistent rate limit reject bad requests", () => {
 });
 test("one reservation cannot be charged twice", () => {
   const u = seed("payment");
-  db.prepare("INSERT INTO payments VALUES(?,?,95000,'paid',NULL,?)").run(
+  db.prepare("INSERT INTO payments(id,user_id,amount,status,provider_id,created_at) VALUES(?,?,95000,'paid',NULL,?)").run(
     "p1",
     u.id,
     Date.now(),
   );
   assert.throws(() =>
     db
-      .prepare("INSERT INTO payments VALUES(?,?,95000,'pending',NULL,?)")
+      .prepare("INSERT INTO payments(id,user_id,amount,status,provider_id,created_at) VALUES(?,?,95000,'pending',NULL,?)")
       .run("p2", u.id, Date.now()),
   );
 });
@@ -112,7 +112,7 @@ test("payment webhooks use canonical provider state, enforce ownership, and dedu
     "cus_owner",
     u.id,
   );
-  db.prepare("INSERT INTO payments VALUES(?,?,95000,'pending',?,?)").run(
+  db.prepare("INSERT INTO payments(id,user_id,amount,status,provider_id,created_at) VALUES(?,?,95000,'pending',?,?)").run(
     "webhook-payment",
     u.id,
     "cs_owned",

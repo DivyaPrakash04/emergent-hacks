@@ -26,6 +26,7 @@ import {
   verifyCode,
 } from "@/lib/providers";
 import { processEvent } from "@/lib/webhook";
+import { DEMO_SEEKER_ID, ensureDemoAccounts, reservationFor } from "@/lib/demo";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const credentials = z.object({
@@ -75,7 +76,7 @@ function snapshot(user: User | null) {
     },
     payments: db
       .prepare(
-        "SELECT id,amount,status,created_at FROM payments WHERE user_id=? ORDER BY created_at DESC",
+        "SELECT id,amount,status,created_at,listing_id FROM payments WHERE user_id=? ORDER BY created_at DESC",
       )
       .all(user.id),
     activity: db
@@ -91,6 +92,7 @@ async function handle(
 ) {
   try {
     providerMode();
+    await ensureDemoAccounts();
     const path = (await params).path.join("/");
     if (request.method === "GET") {
       if (path === "me") return json(snapshot(await currentUser()));
@@ -153,8 +155,25 @@ async function handle(
       log(user.id, "Signed in");
       return json({ ok: true });
     }
+    if (path === "demo/login") {
+      // One-click "Continue as Maya" for the live demo. Demo mode only.
+      if (providerMode() !== "demo") throw new HttpError(404, "Not found.");
+      await createSession(DEMO_SEEKER_ID);
+      log(DEMO_SEEKER_ID, "Signed in with the demo login");
+      return json({ ok: true });
+    }
     const user = await requireUser();
     rateLimit(`action:${user.id}`, 100);
+    if (path === "demo/reset") {
+      // Clears this account's simulated reservations so the demo can run again. Demo mode only.
+      if (providerMode() !== "demo") throw new HttpError(404, "Not found.");
+      transaction(() => {
+        db.prepare("DELETE FROM payments WHERE user_id=?").run(user.id);
+        db.prepare("DELETE FROM activity WHERE user_id=?").run(user.id);
+      });
+      log(user.id, "Demo reset");
+      return json({ ok: true });
+    }
     if (path === "auth/logout") {
       await logout();
       return json({ ok: true });
@@ -228,9 +247,10 @@ async function handle(
           403,
           "This test reservation is for seeker accounts.",
         );
+      const room = reservationFor(data?.listingId);
       if (providerMode() === "demo")
-        return json({ demo: true, kind: "payment" });
-      return json({ url: await startCheckout(user, "payment") });
+        return json({ demo: true, kind: "payment", listingId: room.listingId, title: room.title, amount: room.amountCents });
+      return json({ url: await startCheckout(user, "payment", room) });
     }
     if (path === "demo/complete") {
       if (providerMode() !== "demo") throw new HttpError(404, "Not found.");
@@ -243,6 +263,7 @@ async function handle(
       if (input.kind === "payment") {
         if (!verified(user) || user.role !== "seeker")
           throw new HttpError(403, "Verify a seeker account first.");
+        const room = reservationFor(data?.listingId);
         transaction(() => {
           const paid = db
             .prepare(
@@ -252,12 +273,14 @@ async function handle(
           if (paid)
             throw new HttpError(409, "This reservation has already been paid.");
           db.prepare(
-            "INSERT INTO payments(id,user_id,amount,status,created_at) VALUES(?,?,95000,?,?)",
+            "INSERT INTO payments(id,user_id,amount,status,created_at,listing_id) VALUES(?,?,?,?,?,?)",
           ).run(
             randomUUID(),
             user.id,
+            room.amountCents,
             input.outcome === "success" ? "paid" : "failed",
             Date.now(),
+            room.listingId,
           );
           log(
             user.id,
