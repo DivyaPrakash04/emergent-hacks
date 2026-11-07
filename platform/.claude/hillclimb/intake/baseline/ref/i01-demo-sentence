@@ -1,0 +1,1 @@
+{"preferences":{"dates":{"start":"2027-06-01","end":"2027-08-15","maxUncoveredDays":5},"price":{"ideal":900,"limit":1050},"commute":{"ideal":20,"limit":35},"facilities":{"kitchen":"must","furnished":"important"}},"destination":"work","missing":[],"questions":[],"source":"rules"}

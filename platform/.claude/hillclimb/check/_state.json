@@ -29,5 +29,6 @@
     "lib/ai/schemas.ts",
     "lib/roomsure/scam.ts",
     "lib/roomsure/fairPrice.ts"
-  ]
+  ],
+  "harness_sha": "560c2b342807a713aa9bfaffac1e7b533e450bd8ee43008ba9c856422c99ed9e"
 }

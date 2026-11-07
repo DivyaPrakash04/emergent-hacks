@@ -1,0 +1,1 @@
+{"preferences":{"dates":{"start":"2027-06-01","end":"2027-08-15","maxUncoveredDays":3},"price":{"ideal":800,"limit":950},"facilities":{"parking":"must","ac":"nice"}},"destination":"work","missing":["Commute"],"questions":[],"source":"rules"}
