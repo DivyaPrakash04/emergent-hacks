@@ -68,3 +68,22 @@ Use Node 24 everywhere.
 ## Demo limitations
 
 The app uses synthetic listings, approximate commute times, and demo fair-price baselines. Verification, host replies, chat and payments are simulated. 3D scans are samples, not the listed rooms. On Vercel, accounts created during the demo can reset when the server restarts; the demo accounts are always recreated. The app does not fetch real listings, verify a real person, move money, or guarantee that any room is legitimate.
+
+## Uploaded website frontend
+
+The Lovable website export is available in [`website/`](website/README.md). It is
+a standalone TanStack Start / React / TypeScript frontend, imported from the
+provided ZIP. It has not replaced the Next.js app in `platform/` or been wired
+to its backend; the exported UI uses its own mock API and local browser state.
+
+Run it separately with Bun, using the included lockfile:
+
+```sh
+cd website
+bun install --frozen-lockfile
+bun run dev --port 5173
+```
+
+Open http://localhost:5173. Run its existing tests with `bun run test` and build
+with `bun run build`. The original website source and export metadata are kept
+intact.
