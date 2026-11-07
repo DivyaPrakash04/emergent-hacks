@@ -10,7 +10,7 @@ import {
   weightsFor,
   type Listing,
   type Preferences,
-} from "./rankListings.ts";
+} from "../platform/lib/roomsure/rankListings.ts";
 import { engineForDemo, engineInDemo } from "./build-demo.mjs";
 
 const rooms: Listing[] = [
@@ -124,4 +124,63 @@ test("commute estimate follows the MVP spec formula", () => {
 test("demo.html runs the current engine (run node ranking/build-demo.mjs if this fails)", () => {
   const html = readFileSync(new URL("./demo.html", import.meta.url), "utf8");
   assert.equal(engineInDemo(html), engineForDemo());
+});
+
+// ---------- v2 trust switch ("Prefer verified hosts") ----------
+// The fixture from the MVP requirements (section 4) and the demo script.
+const mvpRooms: Listing[] = [
+  { id: "A", pricePerMonth: 950, commuteMinutes: 25, availableFrom: "2027-06-01", availableTo: "2027-08-15", facilities: ["furnished", "kitchen"] },
+  { id: "B", pricePerMonth: 880, commuteMinutes: 32, availableFrom: "2027-06-04", availableTo: "2027-08-15", facilities: ["kitchen"] },
+  { id: "C", pricePerMonth: 1100, commuteMinutes: 15, availableFrom: "2027-06-01", availableTo: "2027-08-15", facilities: ["furnished", "kitchen"] },
+  { id: "D", pricePerMonth: 1000, commuteMinutes: 12, availableFrom: "2027-06-01", availableTo: "2027-08-15", facilities: ["furnished", "kitchen"] },
+  { id: "E", pricePerMonth: 940, commuteMinutes: 25, availableFrom: "2027-06-01", availableTo: "2027-08-15", facilities: ["furnished", "kitchen"], trust: "caution", trustReason: "Landlord consent pending" },
+];
+const mvpOrder = (prefs: Preferences) => rankListings(prefs, mvpRooms).ranked.map((r) => `${r.listing.id} ${r.score}`);
+
+test("trust switch on by default: A 77, D 73, E 67 (79.33 x 0.85), B 54; C is a near miss", () => {
+  assert.deepEqual(mvpOrder(maya()), ["A 77", "D 73", "E 67", "B 54"]);
+  const { filtered } = rankListings(maya(), mvpRooms);
+  assert.deepEqual(filtered.map((f) => f.listing.id), ["C"]);
+  assert.equal(filtered[0].reasons[0].message, "$1,100 is $50 over your $1,050 limit");
+});
+
+test("turning the trust switch off puts the cheaper caution sublet first at 79", () => {
+  assert.deepEqual(mvpOrder({ ...maya(), preferVerified: false }), ["E 79", "A 77", "D 73", "B 54"]);
+});
+
+test("commute importance 9 makes D first (77, A 75); switch off then puts E first", () => {
+  const prefs = maya();
+  prefs.importance = { ...prefs.importance, commute: 9 };
+  assert.deepEqual(mvpOrder(prefs), ["D 77", "A 75", "E 66", "B 50"]);
+  assert.deepEqual(mvpOrder({ ...prefs, preferVerified: false }), ["E 78", "D 77", "A 75", "B 50"]);
+});
+
+test("a trust penalty is the first give-up and appears in the sentence", () => {
+  const e = rankListings(maya(), mvpRooms).ranked.find((r) => r.listing.id === "E")!;
+  assert.equal(e.trustFactor, 0.85);
+  assert.equal(e.gives[0].factor, "trust");
+  assert.equal(e.gives[0].label, "Landlord consent pending (−15%)");
+  assert.equal(
+    e.sentence,
+    "#3 because it covers every date and is furnished; you give up 15% of the score (landlord consent pending), $40 on price and 5 extra minutes of commute.",
+  );
+  const a = rankListings(maya(), mvpRooms).ranked.find((r) => r.listing.id === "A")!;
+  assert.ok(!a.gives.some((g) => g.factor === "trust"));
+});
+
+test("show-the-math adds up: points sum to baseScore, and exactScore = baseScore x trustFactor", () => {
+  for (const r of rankListings(maya(), mvpRooms).ranked) {
+    const sum = Object.values(r.points).reduce((s, p) => s + p, 0);
+    assert.ok(Math.abs(sum - r.baseScore) < 1e-9);
+    assert.ok(Math.abs(r.baseScore * r.trustFactor - r.exactScore) < 1e-9);
+    assert.equal(r.score, Math.round(r.exactScore));
+  }
+});
+
+test("outside listings get 0.7 and their own reason", () => {
+  const outside: Listing = { ...mvpRooms[0], id: "O", trust: "outside" };
+  const r = rankListings(maya(), [outside]).ranked[0];
+  assert.equal(r.trustFactor, 0.7);
+  assert.equal(r.score, Math.round(76.6667 * 0.7));
+  assert.equal(r.gives[0].label, "Outside listing, not verified by Roomsure (−30%)");
 });

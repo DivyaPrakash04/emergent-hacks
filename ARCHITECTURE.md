@@ -13,8 +13,8 @@ The MVP requirements define what the product does. This document defines how it 
 | App | One Next.js App Router app in `platform/` (React, TypeScript, Node 24) | PR #2 already provides it, with tests. One codebase for UI and server routes. |
 | UI | Tailwind and shadcn/ui screens designed in Lovable (`lovable/`), then ported into `platform/` | Lovable delivers the polished UX the team wants. Porting keeps one app, one link, and PR #2's tested backend. |
 | Validation | Zod at every untrusted boundary | Request bodies, Claude output, seed JSON, localStorage. |
-| Ranking | `platform/lib/ranking/rankListings.ts`, pure TypeScript, run in the browser | Instant reranking, deterministic, unit-tested (PR #4). |
-| Listings | Versioned JSON in `platform/data/` | Curated synthetic demo inventory. No database needed for listings. |
+| Ranking | `platform/lib/roomsure/rankListings.ts`, pure TypeScript, run in the browser | Instant reranking, deterministic, unit-tested (PR #4). |
+| Listings | Versioned TypeScript data in `platform/lib/roomsure/data/` | Curated synthetic demo inventory. No database needed for listings. |
 | Accounts | SQLite via `node:sqlite` (PR #2) | Real accounts, hashed passwords and sessions with no external database. |
 | Verification and payments | PR #2 in `PROVIDER_MODE=demo` | Simulated outcomes. Stripe/Resend test-mode code stays in the repo, switched off. |
 | Swipes, shortlist, matches | Browser state + localStorage, keyed by user ID and listing ID | Presentation state. Resets cleanly. |
@@ -37,7 +37,7 @@ flowchart LR
   subgraph Server[Next.js on Vercel]
     API[API router<br/>app/api/...path]
     DB[(SQLite<br/>accounts, sessions, payments)]
-    Seed[(platform/data/*.json)]
+    Seed[(lib/roomsure/data)]
     AI[Claude adapter<br/>lib/ai]
   end
   Claude[Claude API]
@@ -66,10 +66,11 @@ flowchart LR
 **Server (API router):** PR #2's auth, Passport, verification and payment routes, plus the new demo login, intake, listing check and reserve routes. Each route validates its input, checks the session and origin, calls a pure module or the Claude adapter, validates the output, and returns a small typed response.
 
 **Pure modules** (no React, Next.js, SDK or browser APIs):
-- `lib/ranking/`: PR #4's engine, plus the trust switch.
-- `lib/trust/fair-price.ts`: baseline lookup, adjustments, label.
-- `lib/trust/scam-check.ts`: rule signals, exact-quote check, verdict.
-- `lib/intake/rules.ts`: the fallback sentence parser.
+- `lib/roomsure/rankListings.ts`: PR #4's engine, plus the trust switch.
+- `lib/roomsure/deck.ts`: `buildDeck()`, the one entry point for ranked rooms.
+- `lib/roomsure/fairPrice.ts`: baseline lookup, adjustments, label.
+- `lib/roomsure/scam.ts`: rule signals, exact-quote check, verdict.
+- `lib/roomsure/intake.ts`: the fallback sentence parser.
 - `lib/types.ts`: app types that extend the engine types (section 6).
 
 ## 4. Project structure
@@ -88,35 +89,39 @@ platform/                         # the one app (PR #2 + integration)
     api/[...path]/route.ts        # PR #2 router; add the new routes here
     globals.css
   components/roomsure/            # ported from the Lovable repo: deck, card, preferences, match, chat, check
-  data/
-    listings.json
-    outside-examples.json
-    fair-baselines.json
   lib/
     auth.ts  db.ts  providers.ts  webhook.ts   # PR #2
-    ranking/rankListings.ts       # moved from ranking/ (PR #4)
-    trust/fair-price.ts
-    trust/scam-check.ts
-    intake/rules.ts
+    roomsure/                     # the "brain": pure TypeScript, also synced into Lovable's src/lib/roomsure/
+      rankListings.ts             # the engine (PR #4) + trust switch
+      types.ts                    # RoomListing, DeckCard, CheckResult, Reservation, ...
+      deck.ts                     # buildDeck(): the only way the UI gets ranked rooms
+      defaults.ts                 # Maya's preferences, labels, the demo sentence
+      fairPrice.ts                # demo baselines, adjustments, labels
+      scam.ts                     # rule signals, exact-quote check, verdict
+      intake.ts                   # the offline sentence parser
+      chat.ts                     # canned host conversation
+      mockApi.ts                  # mock API (becomes api.ts in Lovable)
+      api.ts                      # real client for the routes in section 8 (added at the port)
+      data/listings.ts            # 12 demo rooms (1 suspended)
+      data/outside-examples.ts    # 3 pasted-listing samples
     ai/claude.ts                  # server-only Claude adapter
     ai/schemas.ts                 # Zod schemas for Claude output
-    types.ts
-    demo-state.ts                 # localStorage helpers
   public/roomwalk/                # copied from roomwalk/viewer (PR #3)
-  tests/
-ranking/                          # README, demo.html (offline backup), tests; build-demo.mjs reads platform/lib/ranking
+  tests/                          # PR #2's tests + roomsure.test.ts
+ranking/                          # README, demo.html (offline backup), tests; build-demo.mjs reads platform/lib/roomsure
 roomwalk/                         # viewer source, scan pipeline (Modal / local GPU), tools
+lovable/                          # AGENTS.md, prompts, sync-to-lovable.mjs
 ```
 
 **UI workflow:** Lovable cannot build Next.js, and it always creates its own GitHub repo. So the team designs in a Lovable project, and its repo is mirrored into the `lovable-ui` branch here. Claude Code pushes the engine, seed data, scam rules and a mock `api.ts` into that Lovable repo, so the designs run on real logic. When the screens are approved, they are ported into `platform/` and the mock API is swapped for the real routes in section 8.
 
-Why the engine moves: Next.js does not easily import code from outside its own folder. Keep one copy in `platform/lib/ranking/`. Point `ranking/build-demo.mjs` and `ranking/rankListings.test.ts` at it, so `demo.html` stays a working offline backup.
+Why the engine moves: Next.js does not easily import code from outside its own folder. Keep one copy in `platform/lib/roomsure/`. Point `ranking/build-demo.mjs` and `ranking/rankListings.test.ts` at it, so `demo.html` stays a working offline backup.
 
 ## 5. Data and persistence
 
 | Data | Where | Notes |
 |---|---|---|
-| Listings, outside samples, fair baselines | `platform/data/*.json` | Read-only, synthetic, labeled demo. Never written at runtime. |
+| Listings, outside samples, fair baselines | `platform/lib/roomsure/data/*.ts` and `fairPrice.ts` | Read-only, synthetic, labeled demo. Never written at runtime. |
 | Accounts, sessions, codes, payments, activity | SQLite (`DATABASE_PATH`) | PR #2 schema. Add `listing_id` to `payments`. |
 | Demo accounts | Created on every server start (`ensureDemoAccounts()` in `db.ts`) | Maya (seeker, simulated-verified) and one demo host. Makes the demo survive a database wipe. |
 | Preferences, swipes, shortlist, host replies | localStorage, keyed by user ID | Malformed or old data → reset to defaults. |
@@ -128,7 +133,7 @@ Why the engine moves: Next.js does not easily import code from outside its own f
 
 ## 6. Shared contracts
 
-The engine's types (`lib/ranking/rankListings.ts`) are the base. The app extends them; it never redefines the score.
+The engine's types (`lib/roomsure/rankListings.ts`) are the base. The full app types are in `lib/roomsure/types.ts`; the sketch below is a summary. The app extends them; it never redefines the score.
 
 ```ts
 // Engine (PR #4), plus the v2 trust fields
@@ -195,7 +200,7 @@ Mapping rules: the app removes `trustStatus: "suspended"` before calling the eng
 
 ### A. Intake → live ranking
 1. The seeker types a sentence. `POST /api/intake` with `{ text, today }`.
-2. The server calls Claude (section 9). If there is no key, a timeout, a refusal or invalid JSON, it runs `lib/intake/rules.ts` instead.
+2. The server calls Claude (section 9). If there is no key, a timeout, a refusal or invalid JSON, it runs `lib/roomsure/intake.ts` instead.
 3. It returns `{ preferences: Partial<Preferences>, destination?, missing: string[], questions: string[], source: "claude" | "rules" }`.
 4. The browser merges the result into defaults, shows editable controls, and labels which path ran.
 5. Every later change reranks in the browser only.
@@ -207,7 +212,7 @@ Swipes are saved by listing ID, never by array position. Detail resolves the sam
 1. "Simulate host reply" sets `hostAccepted[listingId]`. `matched = liked && hostAccepted`.
 2. The mock chat appears, labeled "Chat demo · no real messages".
 3. Reserve sends `POST /api/payment/start` with `{ listingId }`.
-4. The server checks the session, origin and verified status, then looks up `pricePerMonth` in `data/listings.json`. It never accepts a price from the client.
+4. The server checks the session, origin and verified status, then looks up `pricePerMonth` in `lib/roomsure/data/listings.ts`. It never accepts a price from the client.
 5. The simulated payment is stored with `listing_id` and shows in the Passport.
 6. `POST /api/demo/reset` (demo mode only) clears Maya's payments, so the demo can run again. PR #2 allows one active payment per user.
 

@@ -9,15 +9,22 @@
  *      line to 0 at the walk-away limit.
  *   3. Weights: importance sliders (0–10), or a drag-to-rank priority order,
  *      turned into weights that add up to 1.
- *   4. Score = 100 × Σ(weight × factor score ÷ 100), rounded. Highest first; ties go
+ *   4. Base score = Σ(weight × factor score).
+ *   5. Trust: when "Prefer verified hosts" is on (the default), multiply by a trust
+ *      factor (verified 1.0, caution 0.85, outside 0.7). Round. Highest first; ties go
  *      to the cheaper listing.
  *
  * Pure functions: no DOM, no network, no AI. Safe to run client-side so the deck
- * re-ranks instantly when a slider moves. Trust is deliberately not part of the score.
+ * re-ranks instantly when a slider moves. Suspended listings must be removed before
+ * they reach the engine.
  */
 
 export type Factor = "price" | "commute" | "dates" | "facilities";
 export type Need = "none" | "nice" | "important" | "must";
+export type TrustLevel = "verified" | "caution" | "outside";
+
+/** Score multiplier per trust level, applied only while preferVerified is on. */
+export const TRUST_FACTOR: Record<TrustLevel, number> = { verified: 1, caution: 0.85, outside: 0.7 };
 
 export const FACTORS: Factor[] = ["price", "commute", "dates", "facilities"];
 
@@ -35,6 +42,10 @@ export interface Listing {
   availableTo: string;
   /** Facility keys, e.g. ["furnished", "kitchen", "gym"]. */
   facilities: string[];
+  /** Defaults to "verified". */
+  trust?: TrustLevel;
+  /** Plain-English reason for a caution or outside level, e.g. "Landlord consent pending". */
+  trustReason?: string;
 }
 
 export interface Preferences {
@@ -47,11 +58,13 @@ export interface Preferences {
   importance?: Partial<Record<Factor, number>>;
   /** Drag-to-rank alternative, most important first (MVP spec section 4 weights). */
   priorityOrder?: Factor[];
+  /** "Prefer verified hosts" switch. Defaults to true; false turns the trust factor off. */
+  preferVerified?: boolean;
 }
 
 /** One "gain" or "give up" fact. label = short chip text, phrase = fits in a sentence. */
 export interface Reason {
-  factor: Factor;
+  factor: Factor | "trust";
   label: string;
   phrase: string;
 }
@@ -62,12 +75,17 @@ export interface ScoredListing<L extends Listing = Listing> {
   rank: number;
   /** 0–100, rounded. The number the card shows. */
   score: number;
+  /** baseScore × trustFactor, before rounding. */
   exactScore: number;
+  /** Σ points, before the trust factor. */
+  baseScore: number;
+  /** 1 when preferVerified is off or the listing is verified. */
+  trustFactor: number;
   /** 0–100 per factor; null when the factor is not used (no facility picks). */
   factorScores: Record<Factor, number | null>;
   /** Add up to 1. */
   weights: Record<Factor, number>;
-  /** weight × factor score; these add up to exactScore. */
+  /** weight × factor score; these add up to baseScore. */
   points: Record<Factor, number>;
   uncoveredDays: { start: number; end: number; total: number };
   /** Sorted by how much the seeker cares about each factor. */
@@ -273,11 +291,16 @@ function evaluate<L extends Listing>(
 
   // Steps 2–4: weighted score.
   const points: Record<Factor, number> = { price: 0, commute: 0, dates: 0, facilities: 0 };
-  let exactScore = 0;
+  let baseScore = 0;
   for (const f of active) {
     points[f] = weights[f] * (factorScores[f] ?? 0);
-    exactScore += points[f];
+    baseScore += points[f];
   }
+
+  // Step 5: trust, only while "Prefer verified hosts" is on.
+  const level: TrustLevel = listing.trust ?? "verified";
+  const trustFactor = prefs.preferVerified === false ? 1 : TRUST_FACTOR[level];
+  const exactScore = baseScore * trustFactor;
 
   // Explanation facts.
   const gains: Reason[] = [];
@@ -298,12 +321,20 @@ function evaluate<L extends Listing>(
   for (const { key } of has.sort((a, b) => b.pts - a.pts)) gains.push({ factor: "facilities", label: facilityText(key).label, phrase: facilityText(key).has });
   for (const { key } of lacks.sort((a, b) => b.pts - a.pts)) gives.push({ factor: "facilities", label: facilityText(key).lacks, phrase: facilityText(key).noun });
 
+  if (trustFactor < 1) {
+    const pct = Math.round((1 - trustFactor) * 100);
+    const why = listing.trustReason ?? (level === "outside" ? "Outside listing, not verified by Roomsure" : "Host not fully verified");
+    gives.push({ factor: "trust", label: `${why} (−${pct}%)`, phrase: `${pct}% of the score (${why.charAt(0).toLowerCase()}${why.slice(1)})` });
+  }
+
   // Lead with what the seeker cares about most (sort is stable, so ties keep factor order).
-  const byWeight = (a: Reason, b: Reason): number => weights[b.factor] - weights[a.factor];
+  // A trust penalty always comes first: it is the seeker's own switch and explains the drop.
+  const rankOf = (r: Reason): number => (r.factor === "trust" ? 2 : weights[r.factor]);
+  const byWeight = (a: Reason, b: Reason): number => rankOf(b) - rankOf(a);
   gains.sort(byWeight);
   gives.sort(byWeight);
 
-  return { listing, score: Math.round(exactScore), exactScore, factorScores, weights, points, uncoveredDays: gap, gains, gives };
+  return { listing, score: Math.round(exactScore), exactScore, baseScore, trustFactor, factorScores, weights, points, uncoveredDays: gap, gains, gives };
 }
 
 /** Template explanation from the top facts. The AI explainer may smooth it, using only these facts. */

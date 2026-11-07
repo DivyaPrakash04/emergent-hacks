@@ -424,6 +424,11 @@ footer { font-size: 12.5px; color: var(--muted); }
 
 <script>
 /* ENGINE START: generated from rankListings.ts by build-demo.mjs. Edit the .ts file, not this block. */
+const TRUST_FACTOR = {
+    verified: 1,
+    caution: 0.85,
+    outside: 0.7
+};
 const FACTORS = [
     "price",
     "commute",
@@ -644,11 +649,14 @@ function evaluate(listing, prefs, weights, active) {
         dates: 0,
         facilities: 0
     };
-    let exactScore = 0;
+    let baseScore = 0;
     for (const f of active){
         points[f] = weights[f] * (factorScores[f] ?? 0);
-        exactScore += points[f];
+        baseScore += points[f];
     }
+    const level = listing.trust ?? "verified";
+    const trustFactor = prefs.preferVerified === false ? 1 : TRUST_FACTOR[level];
+    const exactScore = baseScore * trustFactor;
     const gains = [];
     const gives = [];
     const idealPrice = prefs.price.ideal;
@@ -703,13 +711,25 @@ function evaluate(listing, prefs, weights, active) {
         label: facilityText(key).lacks,
         phrase: facilityText(key).noun
     });
-    const byWeight = (a, b)=>weights[b.factor] - weights[a.factor];
+    if (trustFactor < 1) {
+        const pct = Math.round((1 - trustFactor) * 100);
+        const why = listing.trustReason ?? (level === "outside" ? "Outside listing, not verified by Roomsure" : "Host not fully verified");
+        gives.push({
+            factor: "trust",
+            label: `${why} (−${pct}%)`,
+            phrase: `${pct}% of the score (${why.charAt(0).toLowerCase()}${why.slice(1)})`
+        });
+    }
+    const rankOf = (r)=>r.factor === "trust" ? 2 : weights[r.factor];
+    const byWeight = (a, b)=>rankOf(b) - rankOf(a);
     gains.sort(byWeight);
     gives.sort(byWeight);
     return {
         listing,
         score: Math.round(exactScore),
         exactScore,
+        baseScore,
+        trustFactor,
         factorScores,
         weights,
         points,

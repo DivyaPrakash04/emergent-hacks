@@ -1,6 +1,6 @@
 // Copies the engine from rankListings.ts into demo.html as plain JavaScript, so the demo
 // opens with a double-click: no server, no build tools.
-// Run this after every change to rankListings.ts:   node ranking/build-demo.mjs
+// Run this after every change to platform/lib/roomsure/rankListings.ts:   node ranking/build-demo.mjs
 // (rankListings.test.ts fails if you forget.)
 import { readFileSync, writeFileSync } from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
@@ -12,7 +12,7 @@ export const START = "/* ENGINE START: generated from rankListings.ts by build-d
 export const END = "/* ENGINE END */";
 
 export function engineForDemo() {
-  const ts = readFileSync(here("rankListings.ts"), "utf8");
+  const ts = readFileSync(here("../platform/lib/roomsure/rankListings.ts"), "utf8");
   return stripTypeScriptTypes(ts, { mode: "transform" }).replace(/^export /gm, "").trim();
 }
 
@@ -33,5 +33,5 @@ export function injectEngine(html) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const path = here("demo.html");
   writeFileSync(path, injectEngine(readFileSync(path, "utf8")));
-  console.log("Updated ranking/demo.html with the engine from rankListings.ts");
+  console.log("Updated ranking/demo.html with the engine from platform/lib/roomsure/rankListings.ts");
 }

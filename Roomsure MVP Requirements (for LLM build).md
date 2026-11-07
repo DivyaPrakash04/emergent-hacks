@@ -152,17 +152,17 @@ Model and settings are in [ARCHITECTURE.md](ARCHITECTURE.md) section 9.
 
 ## 7. Data and media
 
-- **Listings:** `platform/data/listings.json`. Aim for 12–15 synthetic Providence listings. They must include:
+- **Listings:** `platform/lib/roomsure/data/listings.ts`: 12 synthetic Providence listings (11 visible, 1 suspended). They must include:
   - Maya's fixture rooms A–D. Room A is "Sunny room in Fox Point, $950", the same room as PR #2's seeded reservation.
   - Fixture room E (caution).
   - 2 sublets with landlord consent pending (caution).
   - 1 suspended listing (hidden from the seeker flow).
   - A spread of neighborhoods, prices and facilities, so sliders visibly change the order.
   - Commute minutes for both destinations.
-- **Outside samples:** `platform/data/outside-examples.json`, with 3 pasted listings: one High risk, one Caution, one No issues found.
-- **Fair baselines:** `platform/data/fair-baselines.json`, labeled demo values.
+- **Outside samples:** `platform/lib/roomsure/data/outside-examples.ts`, with 3 pasted listings: one High risk, one Caution, one No issues found.
+- **Fair baselines:** `FAIR_BASELINES` in `platform/lib/roomsure/fairPrice.ts`, labeled demo values.
 - **Personas:** Maya (summer intern, June 1 – Aug 15, works downtown) is a seeded account, pre-verified (simulated). Dev is P1.
-- **Media:** every listing has a photo or poster. 1–2 listings link to a 3D scan labeled "Sample 3D scan · demo". Use the RoomWalk real-room sample (streamed from Hugging Face, preloaded before the demo) with the bundled synthetic room as the offline fallback. Never present a sample scan as a photo of that exact listing.
+- **Media:** every listing has a photo or poster. 1–2 listings link to a 3D scan labeled "Sample 3D scan · demo". Use the kitchen the team scanned from its own phone video (`roomwalk/viewer/demo/kitchen.splat`, bundled, works offline). The Hugging Face real-room sample is a backup. Never present a sample scan as a photo of that exact listing.
 - Synthetic hosts and addresses must not impersonate real people or show private addresses. Show neighborhoods, not street addresses.
 
 ## 8. Interface and accessibility
@@ -179,7 +179,7 @@ Model and settings are in [ARCHITECTURE.md](ARCHITECTURE.md) section 9.
 | Area | Folder | Started in |
 |---|---|---|
 | Accounts, Passport, payments | `platform/` | PR #2 |
-| Ranking engine, deck, near misses | `ranking/` → `platform/lib/ranking/` | PR #4 |
+| Ranking engine, deck, near misses | `platform/lib/roomsure/` (docs and demo in `ranking/`) | PR #4 |
 | 3D room viewer and scan pipeline | `roomwalk/` | PR #3 |
 | Integration, intake, scam check, seed data, deploy | `platform/` | Integration PR |
 
@@ -203,7 +203,7 @@ Agree on the shared types in [ARCHITECTURE.md](ARCHITECTURE.md) section 6 before
 ## 11. Build order
 
 1. Make the integration branch from `main` and merge PRs #2, #3 and #4. Get `platform/` running locally.
-2. Move the ranking engine into `platform/lib/ranking/`. Add the trust switch and fixture E.
+2. Done: the engine and the rest of the brain live in `platform/lib/roomsure/`, with the trust switch and fixture E.
 3. Add seed data, the Maya demo login, and demo accounts that are created on every server start.
 4. Design every screen in Lovable ([lovable/lovable-prompts.md](lovable/lovable-prompts.md)) while steps 2–3 happen, then port them into `platform/` and connect the real routes.
 5. Add the RoomWalk viewer at `platform/public/roomwalk/` and link it from the detail page.
