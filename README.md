@@ -53,6 +53,7 @@ Use Node 24 everywhere.
 - [MVP requirements](Roomsure%20MVP%20Requirements%20%28for%20LLM%20build%29.md): scope, behavior, ranking fixtures, acceptance criteria.
 - [Architecture](ARCHITECTURE.md): folders, shared types, routes, Claude adapter, deployment.
 - [Demo script](demo-script.md): the two-minute path, a pre-demo checklist, backups, and judge Q&A.
+- [Lovable prompts](lovable/lovable-prompts.md) and [Lovable rules](lovable/AGENTS.md): how the team designs the UI in Lovable, step by step.
 - [Master build prompt](MASTER_PROMPT.md): instructions for a coding LLM or teammate.
 - [Pitch deck](Roomsure%20Pitch%20Deck.pptx) and [HTML prototype](Roomsure%20Prototype.html): story and visual references.
 - `Roomsure MVP Requirements (for LLM build).docx`: the original spec, kept as background. The `.md` version wins.

@@ -22,6 +22,8 @@ If these conflict, follow the requirements for behavior and `ARCHITECTURE.md` fo
 - `ranking/`: a pure TypeScript ranking engine with passing tests and an offline swipe demo (PR #4).
 - `roomwalk/`: a first-person Gaussian-splat viewer with a demo room, plus a video-to-3D scan pipeline for cloud or local GPUs (PR #3).
 
+- `lovable/`: the rules and prompts the team uses to design the UI in Lovable. The Lovable repo is mirrored into the `lovable-ui` branch. Port those screens; don't redesign them.
+
 Your job is to join these into one app in `platform/`, not to rebuild them.
 
 ## Product outcome

@@ -11,7 +11,7 @@ The MVP requirements define what the product does. This document defines how it 
 | Concern | Decision | Reason |
 |---|---|---|
 | App | One Next.js App Router app in `platform/` (React, TypeScript, Node 24) | PR #2 already provides it, with tests. One codebase for UI and server routes. |
-| Styling | PR #2's `app/globals.css` and its existing components | Already built and mobile-tested. No Tailwind migration during the hackathon. |
+| UI | Tailwind and shadcn/ui screens designed in Lovable (`lovable/`), then ported into `platform/` | Lovable delivers the polished UX the team wants. Porting keeps one app, one link, and PR #2's tested backend. |
 | Validation | Zod at every untrusted boundary | Request bodies, Claude output, seed JSON, localStorage. |
 | Ranking | `platform/lib/ranking/rankListings.ts`, pure TypeScript, run in the browser | Instant reranking, deterministic, unit-tested (PR #4). |
 | Listings | Versioned JSON in `platform/data/` | Curated synthetic demo inventory. No database needed for listings. |
@@ -77,13 +77,17 @@ flowchart LR
 ```text
 platform/                         # the one app (PR #2 + integration)
   app/
-    page.tsx                      # welcome, sign in, "Continue as Maya", Passport (PR #2)
-    rooms/page.tsx                # intake → preferences → deck / list → near misses
-    rooms/[id]/page.tsx           # detail, score math, 3D, match → chat → reserve
+    page.tsx                      # welcome: "Continue as Maya", sign up (wired to PR #2 auth)
+    start/page.tsx                # describe needs → preferences
+    discover/page.tsx             # swipe deck / list, live preferences panel, near misses
+    room/[id]/page.tsx            # detail, score math, dates timeline, fair price, 3D tour
+    matches/page.tsx              # matches, waiting, passed
+    matches/[id]/page.tsx         # mock chat → reserve (PR #2 checkout)
     check/page.tsx                # outside-listing scam check
+    passport/page.tsx             # simulated checks, reservations, reset demo (PR #2 routes)
     api/[...path]/route.ts        # PR #2 router; add the new routes here
     globals.css
-  components/                     # deck, card, preferences, near-miss, chat, viewer overlay
+  components/roomsure/            # ported from the Lovable repo: deck, card, preferences, match, chat, check
   data/
     listings.json
     outside-examples.json
@@ -103,6 +107,8 @@ platform/                         # the one app (PR #2 + integration)
 ranking/                          # README, demo.html (offline backup), tests; build-demo.mjs reads platform/lib/ranking
 roomwalk/                         # viewer source, scan pipeline (Modal / local GPU), tools
 ```
+
+**UI workflow:** Lovable cannot build Next.js, and it always creates its own GitHub repo. So the team designs in a Lovable project, and its repo is mirrored into the `lovable-ui` branch here. Claude Code pushes the engine, seed data, scam rules and a mock `api.ts` into that Lovable repo, so the designs run on real logic. When the screens are approved, they are ported into `platform/` and the mock API is swapped for the real routes in section 8.
 
 Why the engine moves: Next.js does not easily import code from outside its own folder. Keep one copy in `platform/lib/ranking/`. Point `ranking/build-demo.mjs` and `ranking/rankListings.test.ts` at it, so `demo.html` stays a working offline backup.
 

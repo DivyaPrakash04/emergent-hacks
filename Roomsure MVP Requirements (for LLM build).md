@@ -167,7 +167,8 @@ Model and settings are in [ARCHITECTURE.md](ARCHITECTURE.md) section 9.
 
 ## 8. Interface and accessibility
 
-- Mobile-first. Use PR #2's existing visual style (its `globals.css`), with the HTML prototype as a reference.
+- Mobile-first, and warm and trustworthy. Every screen is designed in Lovable, on top of the real engine and demo data (rules and prompts in [lovable/](lovable/lovable-prompts.md)), then ported into `platform/`.
+- The swipe deck is the hero screen. It should feel as smooth as the best dating apps: drag with rotation, Interested/Pass stamps, spring-back, a card flip for "Show the math", and an "It's a match" moment.
 - Keep "Demo data" visible. Put "Simulated" next to verification, host replies, chat and payments.
 - Scores and reasons are readable without opening a detail page.
 - Pass/Interested buttons and arrow keys as well as swipe gestures. Visible focus states, labeled controls, and reduced-motion support.
@@ -204,7 +205,7 @@ Agree on the shared types in [ARCHITECTURE.md](ARCHITECTURE.md) section 6 before
 1. Make the integration branch from `main` and merge PRs #2, #3 and #4. Get `platform/` running locally.
 2. Move the ranking engine into `platform/lib/ranking/`. Add the trust switch and fixture E.
 3. Add seed data, the Maya demo login, and demo accounts that are created on every server start.
-4. Build the preferences, deck, list, near misses, shortlist and detail screens.
+4. Design every screen in Lovable ([lovable/lovable-prompts.md](lovable/lovable-prompts.md)) while steps 2–3 happen, then port them into `platform/` and connect the real routes.
 5. Add the RoomWalk viewer at `platform/public/roomwalk/` and link it from the detail page.
 6. Add the scam check (rules first, then Claude) and fair-price labels.
 7. Add Claude intake with the rule fallback.
