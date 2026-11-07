@@ -4,6 +4,8 @@
 **Audience:** Build team, reviewers, and coding LLMs
 **Related documents:** [README](README.md), [MVP requirements](Roomsure%20MVP%20Requirements%20%28for%20LLM%20build%29.md), [Master build prompt](MASTER_PROMPT.md), [Demo script](demo-script.md)
 
+**Current state (2026-11-07 evening):** the Lovable UI lives in `website/` and talks to `platform/` through `/api` (dev proxy in `website/vite.config.ts`), instead of being ported into `platform/` as planned below. See [handoff.md](handoff.md) for what works, the deploy plan for two apps, and next steps.
+
 The MVP requirements define what the product does. This document defines how it is built. v2 describes one app: PR #2's Next.js app in `platform/`, with the ranking engine (PR #4) and RoomWalk viewer (PR #3) built in.
 
 ## 1. Decisions at a glance
@@ -230,9 +232,9 @@ All new routes go in PR #2's router (`app/api/[...path]/route.ts`) and reuse its
 | Route | Status | Purpose |
 |---|---|---|
 | `auth/*`, `me`, `email/*`, `identity/start`, `card/start`, `host/consent`, `security/password`, `demo/complete`, `webhook` | Existing (PR #2) | Accounts, Passport, simulated checks |
-| `payment/start` | **Change** | Accept `{ listingId }`; price from seed data; store `listing_id` |
-| `demo/login` | **New**, demo mode only | Sign in as Maya with one click |
-| `demo/reset` | **New**, demo mode only | Clear Maya's payments and activity |
+| `payment/start` | **Done** | Accepts `{ listingId }`; price from seed data; stores `listing_id` |
+| `demo/login` | **Done**, demo mode only | Sign in as Maya with one click |
+| `demo/reset` | **Done**, demo mode only | Clear your simulated payments and activity |
 | `intake` | **New** | Sentence → partial preferences (Claude or rules) |
 | `check` | **New** | Pasted listing → facts, signals, verdict |
 
@@ -276,6 +278,7 @@ Ranking, fair price, swipes and shortlist need no route.
 
 **Vercel (primary):**
 - New project → import the repo (the account owner logs in with GitHub) → Root Directory `platform` → Node.js 24.x.
+- **`PROVIDER_MODE=demo` is required.** In production an unset value makes every API call fail with "Set PROVIDER_MODE explicitly" (PR #2 fails closed on purpose). Demo mode simulates ID, card and payment; Stripe is never contacted.
 - Environment variables: `APP_URL=https://<production-domain>`, `PROVIDER_MODE=demo`, `DATABASE_PATH=/tmp/roomsure.sqlite`, `ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL`. Do not set Stripe or Resend keys.
 - PR #2 rejects POST requests whose `Origin` doesn't match `APP_URL`, so forms fail on Vercel preview links. Demo only from the production domain.
 - After the first deploy, confirm that `node:sqlite` loads on Vercel's Node 24 runtime. If it doesn't, the laptop backup becomes the main plan and the link becomes a nice-to-have.

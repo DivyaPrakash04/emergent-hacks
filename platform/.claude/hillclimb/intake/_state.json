@@ -33,5 +33,6 @@
     "lib/ai/schemas.ts",
     "lib/roomsure/intake.ts",
     "lib/roomsure/scam.ts"
-  ]
+  ],
+  "harness_sha": "c50242d6429ce0040a28fb0cac3765e5959b2a4ee4f4f7341ac035176a6a1646"
 }

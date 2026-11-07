@@ -1,0 +1,1 @@
+{"verdict":"no_issues_found","verdictLabel":"No issues found","signals":[],"facts":{"price":1000,"neighborhood":"Downcity","availableFrom":null,"roomType":"private","furnished":true},"fairPrice":{"low":852,"high":1084,"mid":968,"kind":"fair","label":"Fair price · demo estimate"},"source":"rules"}

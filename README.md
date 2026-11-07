@@ -24,7 +24,8 @@ All people, rooms, prices, verification, matching, chat and payments in the demo
 
 | Folder | What it is | Started in |
 |---|---|---|
-| `platform/` | **The app.** Next.js, real accounts and sessions, Passport, simulated verification and payments. Rooms, detail, 3D and scam check are added here. | [PR #2](https://github.com/ericmxf17/emergent-hacks/pull/2) |
+| `website/` | **The UI judges see.** Designed in Lovable (TanStack Start, React, Tailwind). Talks to the backend through `/api` (`src/lib/roomsure/api.ts`), falling back to local mocks if no backend answers. | [PR #7](https://github.com/ericmxf17/emergent-hacks/pull/7) |
+| `platform/` | **The backend** (Next.js): real accounts and sessions, demo login and reset, simulated verification and payments priced on the server, and the Claude routes (`/api/intake`, `/api/check`) with rule fallbacks. Also holds the shared logic in `lib/roomsure/` and the eval in `evals/`. | [PR #2](https://github.com/ericmxf17/emergent-hacks/pull/2) |
 | `ranking/` | Ranking engine docs, tests and the offline `demo.html`. The engine itself now lives in `platform/lib/roomsure/`. | [PR #4](https://github.com/ericmxf17/emergent-hacks/pull/4) |
 | `roomwalk/` | 3D room viewer source and the video-to-3D scan pipeline (Modal or local GPU). The viewer is copied into `platform/public/roomwalk/`. | [PR #3](https://github.com/ericmxf17/emergent-hacks/pull/3) |
 
@@ -38,15 +39,28 @@ All people, rooms, prices, verification, matching, chat and payments in the demo
 
 ## Running it
 
-**Current status (2026-11-07):** each piece runs on its own branch until the integration PR merges.
+Use Node 24. Two terminals: the backend, then the website.
 
-- Accounts app (PR #2): `cd platform && npm ci && cp .env.example .env.local && npm run dev`, then open http://localhost:3000. Needs Node 24+.
-- Ranking demo (PR #4): double-click `ranking/demo.html`. Tests: `node --test ranking/rankListings.test.ts`.
-- RoomWalk viewer (PR #3): `cd roomwalk/viewer && python3 serve.py`, then open http://localhost:8000.
+**1. Backend** (`platform/`, port 3000). Copy `.env.example` to `.env.local` once and add `ANTHROPIC_API_KEY` there for Claude; without a key or without API credits, the rule fallbacks run and the screens say "Read by rules (offline)".
 
-**After integration:** `cd platform && npm ci && cp .env.example .env.local && npm run dev`. Add `ANTHROPIC_API_KEY` to `.env.local` for Claude; without it, the rule fallbacks run. Deployment steps are in [ARCHITECTURE.md](ARCHITECTURE.md) section 12.
+```sh
+cd platform && npm ci
+APP_URL=http://localhost:5173 npm run dev
+```
 
-Use Node 24 everywhere.
+`APP_URL` must be the website's address, because the backend only accepts requests from that origin.
+
+**2. Website** (`website/`, port 5173). Vite sends `/api` to the backend on port 3000 (`website/vite.config.ts`).
+
+```sh
+cd website && bun install --frozen-lockfile && bun run dev --port 5173
+```
+
+Without Bun: `npm install --no-package-lock && npx vite dev --port 5173`. Open http://localhost:5173.
+
+**Tests:** `cd platform && npm test && npm run test:e2e` (browser tests never call the paid API), `cd website && bun run test`, and `node --test ranking/rankListings.test.ts`.
+
+**Status and next steps** for whoever picks this up: [handoff.md](handoff.md).
 
 ## Project documents
 
@@ -72,9 +86,10 @@ The app uses synthetic listings, approximate commute times, and demo fair-price 
 ## Uploaded website frontend
 
 The Lovable website export is available in [`website/`](website/README.md). It is
-a standalone TanStack Start / React / TypeScript frontend, imported from the
-provided ZIP. It has not replaced the Next.js app in `platform/` or been wired
-to its backend; the exported UI uses its own mock API and local browser state.
+a TanStack Start / React / TypeScript frontend, imported from the provided ZIP.
+It is wired to the backend in `platform/` through `src/lib/roomsure/api.ts`
+(demo login, Claude intake, Claude scam check, reservations); if no backend
+answers, each call falls back to the export's original mock.
 
 Run it separately with Bun, using the included lockfile:
 

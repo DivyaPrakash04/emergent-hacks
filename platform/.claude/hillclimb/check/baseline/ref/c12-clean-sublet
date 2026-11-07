@@ -1,0 +1,1 @@
+{"verdict":"no_issues_found","verdictLabel":"No issues found","signals":[],"facts":{"price":750,"neighborhood":"Smith Hill","availableFrom":null,"roomType":"private","furnished":false},"fairPrice":{"low":616,"high":784,"mid":700,"kind":"fair","label":"Fair price · demo estimate"},"source":"rules"}

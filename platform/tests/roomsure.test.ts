@@ -142,3 +142,15 @@ test("mock API: suspended hidden, host replies, reserve amount from the listing"
   assert.equal((await api.parseIntake(DEMO_INTAKE_SENTENCE)).source, "rules");
   assert.equal((await api.demoLogin()).name, "Maya Chen");
 });
+
+test("the backend's copy of the website's room prices matches website/ exactly", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { WEBSITE_ROOMS } = await import("../lib/roomsure/data/website-rooms");
+  const src = readFileSync(new URL("../../website/src/lib/roomsure/data/listings.ts", import.meta.url), "utf8");
+  const fromWebsite: Record<string, { title: string; price: number }> = {};
+  for (const m of src.matchAll(/id: "([^"]+)",\s*title: "([^"]+)"[\s\S]*?pricePerMonth: (\d+)/g)) {
+    fromWebsite[m[1]] = { title: m[2], price: Number(m[3]) };
+  }
+  assert.ok(Object.keys(fromWebsite).length >= 8, "could not read the website's listings");
+  assert.deepEqual(WEBSITE_ROOMS, fromWebsite);
+});

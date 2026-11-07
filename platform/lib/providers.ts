@@ -110,7 +110,11 @@ export async function startIdentity(user: User) {
   );
   return session.url;
 }
-export async function startCheckout(user: User, kind: "card" | "payment") {
+export async function startCheckout(
+  user: User,
+  kind: "card" | "payment",
+  room: { listingId: string; title: string; amountCents: number } = { listingId: "fox-point-sunny", title: "Sunny room in Fox Point", amountCents: 95000 },
+) {
   const client = stripe();
   const customerId = await customer(user);
   const table = kind === "card" ? "flows" : "payments";
@@ -132,8 +136,8 @@ export async function startCheckout(user: User, kind: "card" | "payment") {
       ).run(id, user.id, Date.now());
     else
       db.prepare(
-        "INSERT INTO payments(id,user_id,amount,status,created_at) VALUES(?,?,95000,'pending',?)",
-      ).run(id, user.id, Date.now());
+        "INSERT INTO payments(id,user_id,amount,status,created_at,listing_id) VALUES(?,?,?,'pending',?,?)",
+      ).run(id, user.id, room.amountCents, Date.now(), room.listingId);
   }
   const session = prior?.provider_id
     ? await client.checkout.sessions.retrieve(prior.provider_id)
@@ -152,9 +156,9 @@ export async function startCheckout(user: User, kind: "card" | "payment") {
                   {
                     price_data: {
                       currency: "usd",
-                      unit_amount: 95000,
+                      unit_amount: room.amountCents,
                       product_data: {
-                        name: "Roomsure · Fox Point room · first month (test reservation)",
+                        name: `Roomsure · ${room.title} · first month (test reservation)`,
                       },
                     },
                     quantity: 1,

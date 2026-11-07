@@ -18,6 +18,8 @@ export default defineConfig({
       APP_URL: "http://127.0.0.1:3100",
       PROVIDER_MODE: "demo",
       DATABASE_PATH: ".data/e2e.sqlite",
+      // Browser tests never call the paid Claude API: an empty key forces the rules path.
+      ANTHROPIC_API_KEY: "",
     },
   },
 });

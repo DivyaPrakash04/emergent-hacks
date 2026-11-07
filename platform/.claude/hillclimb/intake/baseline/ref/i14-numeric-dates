@@ -1,0 +1,1 @@
+{"preferences":{"price":{"ideal":975,"limit":1150},"facilities":{"gym":"nice","laundry":"important"}},"missing":["Destination","Dates","Commute"],"questions":["Which dates do you need the room for?","Will you commute to work downtown or to Brown's campus?"],"source":"rules"}

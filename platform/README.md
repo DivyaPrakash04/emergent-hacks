@@ -77,10 +77,12 @@ All JSON POST routes except `/api/webhook` require an `Origin` matching `APP_URL
 | POST `/api/email/verify`      | `{code}`                                                   |
 | POST `/api/identity/start`    | Hosted identity link or demo simulation                    |
 | POST `/api/card/start`        | Hosted card-setup link or demo simulation                  |
-| POST `/api/payment/start`     | Checkout for the seeded reservation; verified seekers only |
+| POST `/api/payment/start`     | `{listingId?}`: checkout for that room's first month (price from server-side listing data; default Fox Point $950); verified seekers only |
 | POST `/api/host/consent`      | Host permission self-attestation `{consent}`               |
 | POST `/api/security/password` | `{currentPassword,newPassword}`, revokes existing sessions |
-| POST `/api/demo/complete`     | Demo mode only: `{kind,outcome}`                           |
+| POST `/api/demo/complete`     | Demo mode only: `{kind,outcome,listingId?}`                |
+| POST `/api/demo/login`        | Demo mode only: sign in as Maya (verified demo seeker)     |
+| POST `/api/demo/reset`        | Demo mode only: clear your simulated reservations          |
 | POST `/api/webhook`           | Stripe-signed raw event body                               |
 
 ## Deployment boundary

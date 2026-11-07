@@ -26,6 +26,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS active_payment ON payments(user_id) WHERE stat
 CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, created_at INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS activity (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL REFERENCES users(id), message TEXT NOT NULL, created_at INTEGER NOT NULL);
 `);
+// Which room a reservation is for (added for per-room prices). Older databases gain the column in place.
+if (!(db.prepare("PRAGMA table_info(payments)").all() as { name: string }[]).some((c) => c.name === "listing_id"))
+  db.exec("ALTER TABLE payments ADD COLUMN listing_id TEXT");
 export type User = {
   id: string;
   name: string;
