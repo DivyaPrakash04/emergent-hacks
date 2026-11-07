@@ -26,8 +26,9 @@ jobs_volume = modal.Volume.from_name(f"{APP_NAME}-jobs", create_if_missing=True)
 
 # GPU image: CUDA 11.8 + torch 2.1.2 is the combination nerfstudio documents; gsplat has prebuilt
 # wheels for it, so nothing compiles at build time. COLMAP comes from apt (CPU build, which is fine).
+# Python 3.11: the oldest version Modal's current image builder supports, and the newest torch 2.1.2 ships for.
 gpu_image = (
-    modal.Image.from_registry("nvidia/cuda:11.8.0-devel-ubuntu22.04", add_python="3.10")
+    modal.Image.from_registry("nvidia/cuda:11.8.0-devel-ubuntu22.04", add_python="3.11")
     .apt_install("colmap", "ffmpeg", "git", "libgl1", "libglib2.0-0", "libegl1")
     .env({"TORCH_CUDA_ARCH_LIST": "7.5;8.0;8.6;8.9;9.0", "PYTHONUNBUFFERED": "1"})
     .pip_install("torch==2.1.2+cu118", "torchvision==0.16.2+cu118", extra_index_url="https://download.pytorch.org/whl/cu118")

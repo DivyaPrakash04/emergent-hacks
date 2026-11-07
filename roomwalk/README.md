@@ -16,7 +16,7 @@ cd roomwalk/viewer
 python3 serve.py          # or: python3 -m http.server 8000
 ```
 
-Open http://localhost:8000. It streams a **real photographed room** (a public 51 MB sample scan) and drops you inside it; with no internet it falls back to the built-in synthetic room. Click the room, then:
+Open http://localhost:8000. It loads the **kitchen** scanned from our own phone video (bundled, 15 MB, works offline) and drops you where the camera stood, facing the counter. Click the room, then:
 
 | Key | Action |
 | --- | --- |
@@ -30,7 +30,11 @@ Open http://localhost:8000. It streams a **real photographed room** (a public 51
 | R | Respawn at the room centre |
 | B | Toggle the "stay inside the room" clamp |
 
-Buttons: **Real room** (the sample scan), **Demo room** (offline synthetic room), **Open scan…** (any `.ply` / `.splat` / `.ksplat`). Dragging a scan file onto the page opens it; dragging a video starts a scan.
+Buttons: **Kitchen** (our scan, see below), **Real room** (a public 51 MB sample scan, streamed), **Demo room** (offline synthetic room), **Open scan…** (any `.ply` / `.splat` / `.ksplat`). Dragging a scan file onto the page opens it; dragging a video starts a scan. `?start=real` or `?start=demo` picks the opening scene.
+
+### The bundled kitchen
+
+`viewer/demo/kitchen.splat` was built from a 25-second phone walkthrough (`IMG_2057.mov`) **on CPU only**, with the scripts in `scan/cpu/`: metric monocular depth (Depth Anything V2) + RGB-D visual odometry, fused into ~470k oriented splats, levelled, and cropped to the kitchen (nothing past the glass doors). It is not a trained Gaussian splat, so expect soft texture, some ghosting and a few holes on plain walls; the GPU pipeline below gives far better results from the same video. `kitchen.json` beside it tells the viewer where to spawn and which way is up.
 
 The viewer must be served over HTTP, not opened as a `file://` page.
 

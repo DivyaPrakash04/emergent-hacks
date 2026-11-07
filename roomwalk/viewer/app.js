@@ -11,6 +11,8 @@ const upBtn = $('upBtn');
 // Streams from the public Hugging Face dataset; ~51 MB, cached by the browser after the first load.
 const REAL_ROOM = 'https://huggingface.co/cakewalk/splat-data/resolve/main/room.splat';
 const DEMO_ROOM = './demo/room.ply';
+// The kitchen from the team's own phone video: metric depth + camera tracking fused on CPU (scan/fuse.py).
+const KITCHEN = './demo/kitchen.splat';
 
 // ---------- renderer & camera ----------
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
@@ -70,6 +72,7 @@ function computeBounds(viewer) {
   // Real scans have stray splats far outside the room; trim the outer 3 % per axis.
   const min = new THREE.Vector3(pct(xs, 0.03), pct(ys, 0.03), pct(zs, 0.03));
   const max = new THREE.Vector3(pct(xs, 0.97), pct(ys, 0.97), pct(zs, 0.97));
+  if (scenePreset?.bounds) { min.fromArray(scenePreset.bounds.min); max.fromArray(scenePreset.bounds.max); }
   return { min, max, size: new THREE.Vector3().subVectors(max, min), count: n };
 }
 function autoUp(b) {
@@ -85,12 +88,24 @@ function axisName(v) {
   return (v.getComponent(i) < 0 ? '-' : '+') + 'XYZ'[i];
 }
 let sceneUpHint = null; // a known-good up for a built-in scene
+let scenePreset = null; // optional sidecar (<scene>.json): { up, spawn, forward, speed, bounds }
 function resolveUp() {
   const preset = UPS[upIndex];
-  setUp(preset.v ? new THREE.Vector3(...preset.v) : sceneUpHint ? sceneUpHint.clone() : (bounds ? autoUp(bounds) : new THREE.Vector3(0, 1, 0)));
+  const hint = scenePreset?.up ? new THREE.Vector3(...scenePreset.up) : sceneUpHint;
+  setUp(preset.v ? new THREE.Vector3(...preset.v) : hint ? hint.clone() : (bounds ? autoUp(bounds) : new THREE.Vector3(0, 1, 0)));
   upBtn.textContent = 'Up: ' + preset.name + (preset.v ? '' : ` (${axisName(up)})`);
 }
 function respawn() {
+  if (scenePreset?.spawn && upIndex === 0) {
+    // A scanned scene knows where the camera stood: start there, looking where it looked.
+    pos.set(...scenePreset.spawn);
+    const f = new THREE.Vector3(...(scenePreset.forward || [0, 0, -1]));
+    yaw = Math.atan2(f.dot(e2), f.dot(e1));
+    pitch = Math.max(-0.6, Math.min(0.6, Math.asin(Math.max(-1, Math.min(1, f.dot(up))))));
+    speed = Number(params.get('speed')) || scenePreset.speed || 1.2;
+    applyCamera();
+    return;
+  }
   if (!bounds) { pos.set(0, 1.6, 0); yaw = 0; pitch = 0; applyCamera(); return; }
   const centre = new THREE.Vector3().addVectors(bounds.min, bounds.max).multiplyScalar(0.5);
   const extentUp = Math.abs(bounds.size.dot(up));
@@ -154,11 +169,26 @@ let viewer = null;
 let raf = 0;
 let loadSeq = 0;
 
-function fmt(name) {
-  const ext = name.toLowerCase().split('?')[0].split('.').pop();
-  return ext === 'ksplat' ? GaussianSplats3D.SceneFormat.KSplat
-       : ext === 'splat' ? GaussianSplats3D.SceneFormat.Splat
-       : GaussianSplats3D.SceneFormat.Ply;
+function fmt(url, name = '') {
+  // Format comes from the URL's extension; blob: URLs (files opened from disk) have none, so fall back to the file name.
+  const pick = s => {
+    const ext = String(s).toLowerCase().split('?')[0].split('.').pop();
+    return ext === 'ksplat' ? GaussianSplats3D.SceneFormat.KSplat
+         : ext === 'splat' ? GaussianSplats3D.SceneFormat.Splat
+         : ext === 'ply' ? GaussianSplats3D.SceneFormat.Ply : null;
+  };
+  return pick(url) ?? pick(name) ?? GaussianSplats3D.SceneFormat.Ply;
+}
+
+async function fetchPreset(url) {
+  // Scenes made by scan/fuse.py ship a <name>.json beside the .ply with the camera's real position.
+  if (!/^(\.|\/|https?:)/.test(url) || !/\.(ply|splat|ksplat)(\?|$)/i.test(url)) return null;
+  try {
+    const r = await fetch(url.replace(/\.(ply|splat|ksplat)(\?.*)?$/i, '.json'));
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j && typeof j === 'object' ? j : null;
+  } catch { return null; }
 }
 
 async function loadScene(url, name, { upHint = null, progressive = false, sh = null } = {}) {
@@ -167,14 +197,14 @@ async function loadScene(url, name, { upHint = null, progressive = false, sh = n
   statusEl.innerHTML = `Loading <b>${name}</b>…`;
   if (viewer) { const old = viewer; viewer = null; try { await old.dispose(); } catch (e) { console.warn(e); } }
   if (seq !== loadSeq) return false;
-  const format = fmt(name);
+  const format = fmt(url, name);
   const v = new GaussianSplats3D.Viewer({
     selfDrivenMode: false,
     renderer, camera,
     useBuiltInControls: false,
     // Shared memory needs COOP/COEP headers (viewer/serve.py sends them); plain static hosting still works.
-    sharedMemoryForWorkers: self.crossOriginIsolated === true,
-    gpuAcceleratedSort: self.crossOriginIsolated === true,
+    sharedMemoryForWorkers: params.has('sm') ? params.get('sm') === '1' : self.crossOriginIsolated === true,
+    gpuAcceleratedSort: params.get('gs') === '1',   // off: renders black on some GPUs/software renderers
     integerBasedSort: true,
     halfPrecisionCovariancesOnGPU: true,
     // .ply files from training carry view-dependent colour (spherical harmonics); .splat files don't.
@@ -185,6 +215,8 @@ async function loadScene(url, name, { upHint = null, progressive = false, sh = n
   });
   viewer = v;
   sceneUpHint = upHint;
+  scenePreset = await fetchPreset(url);
+  if (seq !== loadSeq) return false;
   bounds = null;
   let placed = false;
   const place = () => {
@@ -242,6 +274,7 @@ async function loadRealRoom() {
 const isVideo = f => /^video\//.test(f.type) || /\.(mp4|mov|m4v|webm|avi|mkv)$/i.test(f.name);
 $('file').addEventListener('change', e => { const f = e.target.files[0]; if (f) loadScene(URL.createObjectURL(f), f.name); });
 $('demo').addEventListener('click', () => loadScene(DEMO_ROOM, 'demo room'));
+$('kitchen').addEventListener('click', () => loadScene(KITCHEN, 'kitchen scan'));
 $('real').addEventListener('click', loadRealRoom);
 const drop = $('drop');
 addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('on'); });
@@ -331,7 +364,8 @@ zone.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); zo
 setUp(new THREE.Vector3(0, 1, 0));
 const initial = params.get('scene');
 if (initial) loadScene(initial, initial.split('/').pop());
-else if (params.get('offline') === '1' || !navigator.onLine) loadScene(DEMO_ROOM, 'demo room');
-else loadRealRoom();
+else if (params.get('start') === 'real') loadRealRoom();
+else if (params.get('start') === 'demo') loadScene(DEMO_ROOM, 'demo room');
+else loadScene(KITCHEN, 'kitchen scan').then(ok => { if (!ok) loadScene(DEMO_ROOM, 'demo room'); });
 const pendingJob = store.get('roomwalk.job');
 if (pendingJob && apiBase()) { setJob(10, 'Resuming your scan…'); pollJob(pendingJob); }
