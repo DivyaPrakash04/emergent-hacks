@@ -50,13 +50,14 @@ Plus a separate **paste outside listing → facts, quoted evidence, verdict** ch
 
 ### P0 (in this order)
 1. Integration branch: merge PRs #2, #3 and #4; get `platform/` running.
-2. Move the engine to `platform/lib/ranking/`; add the trust switch (`preferVerified`) and fixture E; keep all tests passing.
-3. Seed data (`platform/data/`), demo accounts created at startup, `demo/login` and `demo/reset` routes.
+2. Done: the engine lives in `platform/lib/roomsure/` with the trust switch (`preferVerified`) and fixture E. Keep all tests passing.
+3. Seed data is in `platform/lib/roomsure/data/`. Add demo accounts created at startup, `demo/login` and `demo/reset` routes.
 4. Rooms page: intake box, preferences, deck and list, near misses.
 5. Detail page: score math, trust and fair price, the RoomWalk overlay, then match → chat → reserve.
 6. Scam check page: rules first, then Claude assist.
 7. Claude intake with the rule fallback.
 8. Vercel deploy and a full run-through on the live link and on the laptop.
+9. Evaluation (requirements section 12): a Playwright test of the whole demo path, a hallway test, and, if time allows, the Claude accuracy check in `platform/evals/`.
 
 ### P1 (only after P0 works end to end)
 Host "List your room" draft, live video-to-3D scanning, and a second persona.

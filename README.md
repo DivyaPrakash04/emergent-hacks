@@ -25,7 +25,7 @@ All people, rooms, prices, verification, matching, chat and payments in the demo
 | Folder | What it is | Started in |
 |---|---|---|
 | `platform/` | **The app.** Next.js, real accounts and sessions, Passport, simulated verification and payments. Rooms, detail, 3D and scam check are added here. | [PR #2](https://github.com/ericmxf17/emergent-hacks/pull/2) |
-| `ranking/` | Ranking engine docs, tests and the offline `demo.html`. The engine itself moves to `platform/lib/ranking/`. | [PR #4](https://github.com/ericmxf17/emergent-hacks/pull/4) |
+| `ranking/` | Ranking engine docs, tests and the offline `demo.html`. The engine itself now lives in `platform/lib/roomsure/`. | [PR #4](https://github.com/ericmxf17/emergent-hacks/pull/4) |
 | `roomwalk/` | 3D room viewer source and the video-to-3D scan pipeline (Modal or local GPU). The viewer is copied into `platform/public/roomwalk/`. | [PR #3](https://github.com/ericmxf17/emergent-hacks/pull/3) |
 
 ## Product principles

@@ -19,7 +19,7 @@ How we build the UI. Lovable designs every screen on top of the real ranking eng
 | `src/lib/roomsure/types.ts` | `RoomListing`, `Session`, `IntakeResult`, `CheckResult`, `Reservation` |
 | `src/lib/roomsure/deck.ts` | `buildDeck(preferences, listings, destination, swipedIds)` → `{ deck, nearMisses }`, plus `applyFix` |
 | `src/lib/roomsure/defaults.ts` | `DEFAULT_PREFERENCES` (Maya), facility labels |
-| `src/lib/roomsure/data/listings.ts` | 12–15 Providence demo rooms, including Fox Point (77) |
+| `src/lib/roomsure/data/listings.ts` | 12 Providence demo rooms (1 suspended, never shown), including Fox Point (77) |
 | `src/lib/roomsure/data/outside-examples.ts` | 3 pasted-listing samples for the scam check |
 | `src/lib/roomsure/chat.ts` | The canned host conversation |
 | `src/lib/roomsure/api.ts` | Mock API with short fake delays: `demoLogin`, `getListings`, `parseIntake`, `checkListing`, `simulateHostReply`, `reserve`, `resetDemo` |
@@ -75,6 +75,7 @@ Read AGENTS.md first. Build /discover, the swipe deck. This is the most importan
 DATA
 - Get listings with api.getListings() and the ranked deck with buildDeck(preferences, listings, destination, swipedIds) from src/lib/roomsure/deck.ts. Do not compute scores yourself.
 - Create src/lib/roomsure/state.ts with the state shape in AGENTS.md. Start with DEFAULT_PREFERENCES and destination "work" from src/lib/roomsure/defaults.ts.
+- Room photos: each listing's photos field points to /rooms/<listing id>-<n>.jpg. Create those image files in public/rooms/ (bright, lived-in interiors, no people, matching each room's description). If an image is missing, show a warm gradient placeholder with the neighborhood name.
 
 THE CARD STACK
 - Show the top card plus 2 behind it (scaled 0.95 and 0.90, offset down 10px and 20px). Render only those 3.
@@ -95,7 +96,7 @@ CARD BACK: "Show the math"
 CONTROLS
 - Under the stack: round buttons for Undo (rotate-ccw), Pass (x), Details (info) and Interested (heart). Interested is the biggest, in primary teal.
 - Keyboard: ← pass, → interested, ↑ flip, Z undo.
-- Above the stack: "Card 1 of 4 · ranked for you" and an "Adjust" button that opens the preferences sheet (mobile) or focuses the right panel (desktop).
+- Above the stack: "Card 1 of 6 · ranked for you" (use totalRanked from buildDeck) and an "Adjust" button that opens the preferences sheet (mobile) or focuses the right panel (desktop).
 - A List/Cards toggle. List view shows the same ranked rooms in the same order, each as a compact row with score, title, price, sentence and Interested/Pass buttons.
 
 AFTER A SWIPE
@@ -156,7 +157,7 @@ Read AGENTS.md. Build /room/:id.
 - "How well it fits your dates": a horizontal timeline comparing Maya's stay with the room's availability. Any uncovered days are highlighted in caution amber, with a label like "3 days not covered".
 - "Fair price": a range bar showing the demo fair range, with a marker for this room's price and the label from the data ("Fair price · demo estimate").
 - "Your host": a host card with the host's name, avatar initials, and verification badges marked Simulated (email, ID, card). A caution reason, if any, goes in an amber note ("Landlord consent pending").
-- "Walk the room in 3D": a large button. It opens a full-screen overlay with a close button (Esc also closes it). Inside, render an iframe pointing at listing.scanUrl. If there is no scanUrl or the iframe fails, show a friendly placeholder: "3D tour loads here". The overlay footer says "Sample 3D scan · demo. A scan helps you inspect the room; it doesn't prove the listing is genuine."
+- "Walk the room in 3D": a large button, shown only when listing.scanUrl exists. It opens a full-screen overlay with a close button (Esc also closes it). The 3D viewer is not hosted in this Lovable project yet, so inside the overlay show a placeholder card: "3D tour loads here", with listing.scanUrl in small muted text. We connect the real viewer (an iframe to scanUrl) after the port. The overlay footer says "Sample 3D scan · demo. A scan helps you inspect the room; it doesn't prove the listing is genuine."
 - A sticky bottom bar with Pass and "I'm interested". These do the same as swiping and return to /discover.
 
 Only change /room/:id and the components it uses.

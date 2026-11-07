@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.env*
+!.env.example
+.data/
+test-results/
+playwright-report/
+
+*.tsbuildinfo
+
+# Eval runs: keep cases, runner and _state.json; leave bulk output out
+.claude/hillclimb/**/traces/
+.claude/hillclimb/**/report.html
+.claude/hillclimb/**/trajectory/
+.claude/hillclimb/**/progress.txt

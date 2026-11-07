@@ -1,0 +1,33 @@
+{
+  "flow": "check",
+  "description": "Pasted outside listing -> scam verdict with exact quotes. baseline = offline rules, v1 = Claude (claude-opus-5-5, low effort) through lib/ai/claude.ts.",
+  "metrics": [
+    {
+      "id": "verdict",
+      "label": "Verdict right",
+      "kind": "binary"
+    },
+    {
+      "id": "recall",
+      "label": "Flags found",
+      "kind": "continuous"
+    },
+    {
+      "id": "precision",
+      "label": "No false flags",
+      "kind": "continuous"
+    }
+  ],
+  "perf_fields": [
+    "latency_s",
+    "invented_quotes"
+  ],
+  "harness_paths": [
+    "evals/cases.ts",
+    "evals/grade.ts",
+    "lib/ai/claude.ts",
+    "lib/ai/schemas.ts",
+    "lib/roomsure/scam.ts",
+    "lib/roomsure/fairPrice.ts"
+  ]
+}
