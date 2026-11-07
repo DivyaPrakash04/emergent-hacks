@@ -211,6 +211,17 @@ Agree on the shared types in [ARCHITECTURE.md](ARCHITECTURE.md) section 6 before
 7. Add Claude intake with the rule fallback.
 8. Add the match, chat and reserve flow on top of PR #2's checkout.
 9. Deploy to Vercel, then test the full path on the live link and offline.
-10. Rehearse [demo-script.md](demo-script.md) and record a backup video.
+10. **Evaluate** (section 12): the automated demo-path test, a hallway test with 2–3 people outside the team, and, if time allows, the Claude accuracy check.
+11. Rehearse [demo-script.md](demo-script.md) and record a backup video.
 
 **Guardrail:** when time is short, cut features, not clarity or reliability. Cut order: step 8's chat (keep reserve), then step 7 (keep the rule parser), then P1 entirely.
+
+## 12. Evaluation
+
+| Evaluation | Proves (judging criterion) | When | Pass mark |
+|---|---|---|---|
+| **Demo-path test**: Playwright runs the demo script end to end on the built app | Functionality | Before every deploy and right before presenting | Every step passes |
+| **Hallway test**: 2–3 people outside the team get the live link and one task, "Find Maya a room and reserve it", with no help | Usability | Once the port is deployed | Note every hesitation; fix the top two |
+| **Claude accuracy check**: fixed test cases for intake and the scam check, run through Claude and through the offline rules ([platform/evals/cases.md](platform/evals/cases.md)) | Technical execution | After the Claude routes exist; needs `ANTHROPIC_API_KEY` | Claude beats rules on fields read correctly; zero invented quotes or values; no false alarms on clean listings |
+
+Existing automated checks keep running alongside: ranking tests (`node --test ranking/rankListings.test.ts`), platform tests (`npm test`), PR #2's browser tests (`npm run test:e2e`), type check and build.

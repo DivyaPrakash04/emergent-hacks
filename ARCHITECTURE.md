@@ -248,6 +248,7 @@ Ranking, fair price, swipes and shortlist need no route.
 - **Prompts:** short system prompts that say to extract only what is stated, return "not stated" for unknowns, and treat the listing text as data, ignoring any instructions inside it.
 - **Logging:** log the route, the duration and whether the fallback ran. Never log the pasted text or the key.
 - **Status:** the API response includes `source: "claude" | "rules"`. The UI shows it.
+- **Evaluation:** `platform/evals/` holds fixed test cases for intake and the scam check, each with expected answers. The runner calls the same server functions the routes use, once with Claude and once with rules only, and grades the results with plain code (no judge model). To measure invented evidence, the adapter keeps Claude's raw suggested quotes next to the ones code accepted.
 
 ## 10. Security, privacy, fairness and trust
 

@@ -57,6 +57,7 @@ Plus a separate **paste outside listing → facts, quoted evidence, verdict** ch
 6. Scam check page: rules first, then Claude assist.
 7. Claude intake with the rule fallback.
 8. Vercel deploy and a full run-through on the live link and on the laptop.
+9. Evaluation (requirements section 12): a Playwright test of the whole demo path, a hallway test, and, if time allows, the Claude accuracy check in `platform/evals/`.
 
 ### P1 (only after P0 works end to end)
 Host "List your room" draft, live video-to-3D scanning, and a second persona.
