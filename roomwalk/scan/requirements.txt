@@ -1,4 +1,0 @@
-# Scan server (server.py). The GPU pipeline itself needs nerfstudio + COLMAP + ffmpeg, see README.md.
-fastapi>=0.110
-uvicorn[standard]>=0.29
-python-multipart>=0.0.9

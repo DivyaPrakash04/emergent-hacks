@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kitchen3d",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/server.js"],
+      "port": 8123
+    }
+  ]
+}
