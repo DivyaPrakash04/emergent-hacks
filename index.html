@@ -43,25 +43,6 @@
   #toast.pulse { animation: tpulse 1.3s ease-in-out infinite; }
   @keyframes tpulse { 50% { opacity: 0.55; } }
   @media (prefers-reduced-motion: reduce) { #toast.pulse { animation: none; } }
-  .dock {
-    position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); left: 0; right: 0;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-    display: flex; justify-content: center; pointer-events: none;
-  }
-  .dock-inner {
-    pointer-events: auto; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
-    background: var(--panel); border: 1px solid var(--edge); border-radius: 12px;
-    padding: 6px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 2px 14px rgba(0,0,0,0.10);
-  }
-  .dock button {
-    appearance: none; border: 1px solid transparent; background: transparent; color: var(--fg);
-    font: inherit; font-size: 13px; padding: 7px 13px; border-radius: 8px; cursor: pointer;
-  }
-  .dock button:hover { border-color: var(--edge); }
-  .dock button[aria-pressed="true"] { background: var(--accent); color: #211c10; font-weight: 600; }
-  .dock button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   [hidden] { display: none !important; }
   #loading {
     position: fixed; inset: 0; display: grid; place-items: center;
@@ -86,16 +67,6 @@
 <canvas id="scene"></canvas>
 
 <div id="toast" hidden></div>
-
-<div class="dock">
-  <div class="dock-inner" role="group" aria-label="Views">
-    <button data-view="overview" aria-pressed="true">Overview</button>
-    <button data-view="inside" aria-pressed="false">Inside</button>
-    <button data-view="kitchen" aria-pressed="false">Kitchen</button>
-    <button data-view="dining" aria-pressed="false">Dining</button>
-    <button data-walk aria-pressed="false">Walk</button>
-  </div>
-</div>
 
 <div id="loading"><div><div class="spin"></div><p>Generating room…</p></div></div>
 <div id="errchip" hidden></div>

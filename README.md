@@ -16,13 +16,15 @@ endpoint is only needed for re-exporting).
 
 ## Controls
 
-- **Orbit mode** (default): drag to orbit, scroll/pinch to zoom, right-drag to pan,
-  view presets in the bottom dock. From outside, walls are invisible (dollhouse view).
-- **Walk mode**: hit *Walk* — first-person at eye height with WASD + mouse look
-  (pointer lock), Shift to run, Esc to exit. Real collision against furniture.
-  On touch: left half of the screen moves, right half looks.
-- On load, the room assembles itself from scattered blocks (skipped under
-  `prefers-reduced-motion`).
+The room assembles itself from scattered blocks on load (skipped under
+`prefers-reduced-motion`), waits a beat, then drops you into first-person
+at eye height. There is no other UI.
+
+- **Click** the room to capture the mouse for look control
+- **WASD** / arrows to move, **Shift** to run
+- **Esc** releases the mouse; click (or Esc) captures it again
+- Real collision against counters, tables, banquette, chairs, and the trash can
+- On touch screens: left half of the screen is a move stick, right half looks
 
 ## How it was built
 

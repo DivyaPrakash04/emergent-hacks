@@ -109,7 +109,10 @@ if (!reduceMotion) {
 function finishAssembly() {
   for (const p of parts) { p.m.position.copy(p.toPos); p.m.rotation.copy(p.toRot); }
   parts.length = 0;
-  if (assembling) hideToast();
+  if (assembling) {
+    hideToast();
+    setTimeout(() => { if (!walk.active) walk.enter(); }, 1000); // auto walk-in
+  }
   assembling = false;
 }
 function stepAssembly(dt) {
@@ -169,18 +172,20 @@ document.querySelectorAll('[data-view]').forEach(b => {
 });
 
 // ---------- first-person walk mode ----------
-const walkBtn = document.querySelector('[data-walk]');
 const walk = initWalk({
   camera, orbit: controls, canvas,
   onChange: (on) => {
     animTo = null;
-    walkBtn.textContent = on ? 'Exit walk' : 'Walk';
-    walkBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    if (on) showToast('WASD move · mouse look · Shift run · Esc to exit');
-    else { hideToast(); setView('overview'); }
+    if (on) showToast('WASD to move · click to capture the mouse · Shift to run · Esc releases');
+    else hideToast();
   },
 });
-walkBtn.addEventListener('click', () => (walk.active ? walk.exit() : walk.enter()));
+// Toast follows the pointer-lock state: locked = clean view, released = how to recapture.
+document.addEventListener('pointerlockchange', () => {
+  if (!walk.active) return;
+  if (document.pointerLockElement) hideToast();
+  else showToast('Mouse released · click the room to re-capture · Esc toggles');
+});
 
 setView('overview', true);
 
@@ -226,6 +231,7 @@ function resize() {
   }
 }
 renderOnce();
+if (reduceMotion) setTimeout(() => { if (!walk.active) walk.enter(); }, 1000);
 let firstFrame = true;
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {

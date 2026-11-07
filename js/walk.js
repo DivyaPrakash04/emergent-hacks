@@ -106,7 +106,12 @@ export function initWalk({ camera, orbit, canvas, onChange }) {
   // ---------- keyboard ----------
   window.addEventListener('keydown', (e) => {
     if (!active) return;
-    if (e.code === 'Escape' && !document.pointerLockElement) { exit(); return; }
+    if (e.code === 'Escape' && !document.pointerLockElement) {
+      // Esc toggles the mouse back INTO look mode (browser Esc handles release).
+      // Browsers may throttle an immediate re-lock; clicking the canvas also works.
+      try { const p = canvas.requestPointerLock?.(); if (p && p.catch) p.catch(() => {}); } catch (err) {}
+      return;
+    }
     keys.add(e.code);
     if (/^(Arrow|Space)/.test(e.code)) e.preventDefault();
   });
@@ -115,9 +120,9 @@ export function initWalk({ camera, orbit, canvas, onChange }) {
 
   // ---------- pointer lock ----------
   document.addEventListener('pointerlockchange', () => {
-    const locked = document.pointerLockElement === canvas;
-    if (locked) hadLock = true;
-    else if (active && hadLock) exit();  // Esc released the lock
+    if (document.pointerLockElement === canvas) hadLock = true;
+    // Losing the lock no longer exits walk mode: Esc just frees the cursor,
+    // and a click (or Esc) captures it again.
   });
   document.addEventListener('mousemove', (e) => {
     if (active && document.pointerLockElement === canvas) look(e.movementX, e.movementY);
@@ -128,11 +133,16 @@ export function initWalk({ camera, orbit, canvas, onChange }) {
   const pointers = new Map();            // pointerId -> {x, y, zone}
   canvas.addEventListener('pointerdown', (e) => {
     if (!active || document.pointerLockElement === canvas) return;
+    if (e.pointerType === 'mouse' && e.button === 0) {
+      // click re-captures the mouse; drag-look below stays as the fallback
+      try { const p = canvas.requestPointerLock?.(); if (p && p.catch) p.catch(() => {}); } catch (err) {}
+    }
     const zone = (e.pointerType === 'touch' && e.clientX < window.innerWidth / 2) ? 'move' : 'look';
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, zone });
     canvas.setPointerCapture?.(e.pointerId);
   });
   canvas.addEventListener('pointermove', (e) => {
+    if (document.pointerLockElement === canvas) return; // locked: document mousemove handles look
     const p = pointers.get(e.pointerId);
     if (!p || !active) return;
     if (p.zone === 'look') {
