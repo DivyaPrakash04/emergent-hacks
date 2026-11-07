@@ -1,0 +1,1 @@
+{"preferences":{"price":{"ideal":1100,"limit":1275},"commute":{"ideal":30,"limit":45},"facilities":{"furnished":"must","privateBath":"must"}},"missing":["Destination","Dates"],"questions":["Is $1,275 a month your walk-away limit?","Is a 45-minute commute the most you'd accept?"],"source":"rules"}

@@ -1,0 +1,1 @@
+{"preferences":{"dates":{"start":"2027-06-15","end":"2027-08-30","maxUncoveredDays":3},"price":{"ideal":700,"limit":800},"facilities":{"kitchen":"must"}},"destination":"work","missing":["Commute"],"questions":["Is $800 a month your walk-away limit?"],"source":"rules"}

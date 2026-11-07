@@ -1,0 +1,1 @@
+{"preferences":{"dates":{"start":"2027-09-01","end":"2027-12-20","maxUncoveredDays":3},"price":{"ideal":800,"limit":925},"commute":{"ideal":15,"limit":30}},"destination":"campus","missing":[],"questions":["Is $925 a month your walk-away limit?","Is a 30-minute commute the most you'd accept?"],"source":"rules"}

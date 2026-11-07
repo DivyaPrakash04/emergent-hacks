@@ -1,0 +1,1 @@
+{"preferences":{"dates":{"start":"2027-06-01","end":"2027-08-15","maxUncoveredDays":3},"price":{"ideal":900,"limit":1025},"facilities":{"ac":"must","gym":"nice"}},"destination":"work","missing":["Commute"],"questions":["Is $1,025 a month your walk-away limit?"],"source":"rules"}
