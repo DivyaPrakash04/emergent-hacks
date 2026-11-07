@@ -27,6 +27,7 @@ import {
 } from "@/lib/providers";
 import { processEvent } from "@/lib/webhook";
 import { DEMO_SEEKER_ID, ensureDemoAccounts, reservationFor } from "@/lib/demo";
+import { checkListing, readIntake } from "@/lib/ai/claude";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const credentials = z.object({
@@ -161,6 +162,19 @@ async function handle(
       await createSession(DEMO_SEEKER_ID);
       log(DEMO_SEEKER_ID, "Signed in with the demo login");
       return json({ ok: true });
+    }
+    if (path === "intake" || path === "check") {
+      // Claude reads the text; code validates it and decides. Falls back to the
+      // offline rules on any failure, and says which path ran (source).
+      const { text } = z.object({ text: z.string().trim().min(1, "Type something first.").max(5000) }).parse(data);
+      const client = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+      rateLimit(`ai:${client}`, 60);
+      if (path === "intake") {
+        const { result, call } = await readIntake(text);
+        return json({ ...result, fallback: call.failure ?? null });
+      }
+      const { result, call } = await checkListing(text);
+      return json({ ...result, fallback: call.failure ?? null });
     }
     const user = await requireUser();
     rateLimit(`action:${user.id}`, 100);

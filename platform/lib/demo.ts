@@ -7,6 +7,7 @@ import { randomBytes } from "node:crypto";
 import { db } from "./db";
 import { HttpError, passwordHash, providerMode } from "./auth";
 import { getListing } from "./roomsure/data/listings";
+import { WEBSITE_ROOMS } from "./roomsure/data/website-rooms";
 
 export const DEMO_SEEKER_ID = "demo-maya";
 export const DEMO_HOST_ID = "demo-host";
@@ -55,9 +56,14 @@ export interface Reservation {
   amountCents: number;
 }
 
-/** The room a reservation is for. The price always comes from the listing data. */
+/** The room a reservation is for. The price always comes from server-side listing data. */
 export function reservationFor(listingId: unknown): Reservation {
   const id = typeof listingId === "string" && listingId.trim() ? listingId.trim().slice(0, 100) : DEFAULT_RESERVATION_LISTING;
+  if (id.startsWith("website/")) {
+    const web = WEBSITE_ROOMS[id.slice("website/".length)];
+    if (!web) throw new HttpError(404, "This room can't be reserved.");
+    return { listingId: id, title: web.title, amountCents: web.price * 100 };
+  }
   const room = getListing(id);
   if (!room || room.trustStatus === "suspended") throw new HttpError(404, "This room can't be reserved.");
   return { listingId: room.id, title: room.title, amountCents: room.pricePerMonth * 100 };

@@ -4,6 +4,8 @@
 **Audience:** Build team, reviewers, and coding LLMs
 **Related documents:** [README](README.md), [MVP requirements](Roomsure%20MVP%20Requirements%20%28for%20LLM%20build%29.md), [Master build prompt](MASTER_PROMPT.md), [Demo script](demo-script.md)
 
+**Current state (2026-11-07 evening):** the Lovable UI lives in `website/` and talks to `platform/` through `/api` (dev proxy in `website/vite.config.ts`), instead of being ported into `platform/` as planned below. See [handoff.md](handoff.md) for what works, the deploy plan for two apps, and next steps.
+
 The MVP requirements define what the product does. This document defines how it is built. v2 describes one app: PR #2's Next.js app in `platform/`, with the ranking engine (PR #4) and RoomWalk viewer (PR #3) built in.
 
 ## 1. Decisions at a glance

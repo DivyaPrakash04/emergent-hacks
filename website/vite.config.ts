@@ -15,4 +15,12 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    server: {
+      // Dev only: send /api to the Roomsure backend (platform/, `npm run dev` on port 3000), so the
+      // session cookie stays same-origin. Run the backend with APP_URL=http://localhost:5173.
+      // If the backend isn't running, src/lib/roomsure/api.ts falls back to the local mocks.
+      proxy: { "/api": { target: process.env["ROOMSURE_BACKEND_URL"] ?? "http://127.0.0.1:3000" } },
+    },
+  },
 });
