@@ -6,10 +6,10 @@ It's plain arithmetic, with no AI in the scoring, so every score can be checked 
 
 | File | What it is |
 |---|---|
-| `rankListings.ts` | The engine. Pure TypeScript with no dependencies. Import it into the app. |
+| `platform/lib/roomsure/rankListings.ts` | The engine (moved there so the app and Lovable share one copy). Pure TypeScript with no dependencies. |
 | `rankListings.test.ts` | Tests, including the MVP doc's must-pass Maya case (77 / 73 / 54). |
 | `demo.html` | A working swipe demo. Open it in any browser; no install needed. |
-| `build-demo.mjs` | Copies the engine into `demo.html`. Run it after editing the engine. |
+| `build-demo.mjs` | Copies the engine and the app's demo rooms (`platform/lib/roomsure/data/listings.ts`) into `demo.html`. Run it after editing either. |
 
 ## How a room gets its score
 
@@ -48,7 +48,7 @@ If she raises commute importance from 6 to 9, Room D becomes her first card (77,
 ## Using it in the app
 
 ```ts
-import { buildSwipeDeck, applyFix, type Listing, type Preferences } from "./rankListings";
+import { buildSwipeDeck, applyFix, type Listing, type Preferences } from "@/lib/roomsure/rankListings"; // in the app, use buildDeck() from lib/roomsure/deck
 
 const prefs: Preferences = {
   price: { ideal: 900, limit: 1050 },
@@ -83,7 +83,7 @@ const loosened = applyFix(prefs, nearMisses[0].reasons[0].fix);
 | Weights from drag-to-rank order | 0–10 importance sliders (drag-to-rank still supported via `priorityOrder`) | Two factors can matter equally |
 | "Space" = furnished and private bath, averaged | Seven facilities, each Don't care / Nice / Important / Must | Covers kitchen, gym, laundry and the rest |
 | "houseFit" factor (lifestyle vs. house rules) | Not included yet | Needs seeker lifestyle data first |
-| Score × trust factor (caution 0.85, outside 0.7) | Trust is not part of the score | Swipe cards rank on the seeker's own preferences; trust shows as a badge. Suspended listings should be removed before they reach the engine. |
+| Score × trust factor (caution 0.85, outside 0.7) | Same factors, behind a **Prefer verified hosts** switch (`preferVerified`, on by default) | The seeker controls it. The penalty is the first "gives up" chip, so the card explains the drop. Suspended listings are removed before they reach the engine. |
 | List view and swipe view | Swipe deck, plus near misses when the deck runs out | Matches the swipe product |
 
 ## Running the tests and the demo
@@ -92,10 +92,10 @@ const loosened = applyFix(prefs, nearMisses[0].reasons[0].fix);
 node --test ranking/rankListings.test.ts
 ```
 
-This needs Node 22.18 or newer, which runs TypeScript directly. To see the demo, double-click `ranking/demo.html`. After editing `rankListings.ts`, run `node ranking/build-demo.mjs` so the demo picks up the change. A test fails if you forget.
+This needs Node 22.18 or newer, which runs TypeScript directly. To see the demo, double-click `ranking/demo.html`. After editing the engine or the demo rooms, run `node ranking/build-demo.mjs` so the demo picks up the change. A test fails if you forget.
 
 ## Known gaps
 
-- The demo's seven listings and commute times are made up.
+- The demo shows the app's 11 synthetic rooms; commute times are rough estimates.
 - There's only one commute destination at a time.
 - Swipes don't change the weights yet. The MVP doc lists "learned weights from swipe history" as a later feature.

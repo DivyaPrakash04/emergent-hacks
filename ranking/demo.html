@@ -96,6 +96,10 @@ button { font: inherit; }
 .group-head output, .row output { font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .group-head output b, .row output b { color: var(--ink); font-weight: 600; }
 .hint { margin: -4px 0 0; font-size: 13px; color: var(--muted); }
+.verify { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); cursor: pointer; }
+.verify input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
+.verify b { display: block; font-weight: 600; }
+.verify .hint { display: block; margin: 2px 0 0; }
 .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 14px; }
 
 .imp { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 8px; }
@@ -321,7 +325,7 @@ footer { font-size: 12.5px; color: var(--muted); }
     <p class="lede">Set an ideal and a walk-away limit for price, commute and dates, pick the facilities you need, and say how much each one matters. Every room gets a score out of 100. Your best match is the first card in your deck, and each card says what you gain and give up before you swipe.</p>
     <div class="example">
       <span class="tag">Example loaded</span>
-      <q>Interning downtown, June to mid-August, about $900, under 20 minutes.</q>
+      <q>I’m interning downtown June 1 to August 15. Budget around $900, $1,050 max. Commute ideally 20 minutes, 35 at most. I need a kitchen, furnished matters a lot, and I can live with up to 5 days’ gap.</q>
       <button class="btn" id="reset" type="button">Reset to Maya’s settings</button>
     </div>
   </header>
@@ -332,6 +336,10 @@ footer { font-size: 12.5px; color: var(--muted); }
         <h2>What matters most</h2>
         <p class="hint">0 means ignore it, 10 means it matters most. The weights always add up to 100%.</p>
         <div id="importance"></div>
+        <label class="verify" for="prefer-verified">
+          <input type="checkbox" id="prefer-verified">
+          <span><b>Prefer verified hosts</b><span class="hint">Rooms from hosts who aren’t fully verified score 15% lower. Turn this off to rank on your trade-offs alone.</span></span>
+        </label>
       </div>
 
       <div class="group">
@@ -416,10 +424,10 @@ footer { font-size: 12.5px; color: var(--muted); }
         <code>score = Σ (weight × factor score)</code>
       </li>
     </ol>
-    <p class="note"><b>Facilities</b> score the share of points a room has: Nice is worth 1, Important 2. A furnished room you marked Important, without the gym you marked Nice, gets 2 of 3 points, so 67. <b>Dates</b> score the days of your stay a room doesn’t cover, with 0 as the ideal and your gap tolerance as the limit. <b>Trust</b> is not part of the score.</p>
+    <p class="note"><b>Facilities</b> score the share of points a room has: Nice is worth 1, Important 2. A furnished room you marked Important, without the gym you marked Nice, gets 2 of 3 points, so 67. <b>Dates</b> score the days of your stay a room doesn’t cover, with 0 as the ideal and your gap tolerance as the limit. <b>Trust</b> counts only while “Prefer verified hosts” is on: the score is multiplied by 0.85 when the host isn’t fully verified (for example, landlord consent pending), and by 0.7 for a listing from outside Roomsure.</p>
   </section>
 
-  <footer>Demo data: seven example Providence listings for summer 2027. Commute times are rush-hour estimates by bus or on foot. The engine is <code>ranking/rankListings.ts</code>.</footer>
+  <footer>Demo data: the same 11 synthetic Providence rooms as the Roomsure app, for summer 2027. Commute times are rough estimates. The engine is <code>platform/lib/roomsure/rankListings.ts</code> and the rooms are <code>platform/lib/roomsure/data/listings.ts</code>.</footer>
 </div>
 
 <script>
@@ -794,16 +802,415 @@ function estimateCommuteMinutes(from, to) {
 /* ENGINE END */
 </script>
 <script>
-// ---------- Demo data ----------
-const ROOMS = [
-  { id: "A", hood: "Wayland Square", kind: "Private room in a 3-bed apartment", pricePerMonth: 950, commute: { work: 25, campus: 12 }, availableFrom: "2027-06-01", availableTo: "2027-08-20", facilities: ["furnished", "kitchen", "laundry", "ac"] },
-  { id: "B", hood: "East Providence", kind: "Room in a shared house", pricePerMonth: 880, commute: { work: 32, campus: 28 }, availableFrom: "2027-06-04", availableTo: "2027-08-31", facilities: ["kitchen", "laundry", "parking"] },
-  { id: "C", hood: "Jewelry District", kind: "Studio in a new building", pricePerMonth: 1100, commute: { work: 10, campus: 18 }, availableFrom: "2027-06-01", availableTo: "2027-08-31", facilities: ["furnished", "kitchen", "laundry", "gym", "privateBath", "ac"] },
-  { id: "D", hood: "Federal Hill", kind: "Room with its own bathroom", pricePerMonth: 1000, commute: { work: 12, campus: 22 }, availableFrom: "2027-05-25", availableTo: "2027-08-31", facilities: ["furnished", "kitchen", "gym", "privateBath", "ac"] },
-  { id: "E", hood: "Fox Point", kind: "Room in a rooming house", pricePerMonth: 820, commute: { work: 18, campus: 10 }, availableFrom: "2027-05-15", availableTo: "2027-08-15", facilities: ["furnished"] },
-  { id: "F", hood: "Pawtucket", kind: "Room in a 2-bed condo", pricePerMonth: 760, commute: { work: 40, campus: 35 }, availableFrom: "2027-06-01", availableTo: "2027-08-31", facilities: ["furnished", "kitchen", "laundry", "privateBath", "ac", "parking"] },
-  { id: "G", hood: "Olneyville", kind: "Room in a mill-building loft", pricePerMonth: 930, commute: { work: 15, campus: 30 }, availableFrom: "2027-06-10", availableTo: "2027-08-31", facilities: ["furnished", "kitchen", "laundry", "gym", "ac", "parking"] },
+// ---------- Demo data: the same rooms as the app ----------
+/* DATA START: generated from platform/lib/roomsure/data/listings.ts by build-demo.mjs. Edit the .ts file, not this block. */
+const DEMO_LISTINGS = (() => {
+const KITCHEN_SCAN = "/roomwalk/index.html?scene=./demo/kitchen.splat";
+const photos = (id, n = 3)=>Array.from({
+        length: n
+    }, (_, i)=>`/rooms/${id}-${i + 1}.jpg`);
+const verifiedHost = (name, since)=>({
+        name,
+        since,
+        checks: {
+            email: true,
+            id: true,
+            card: true
+        }
+    });
+const LISTINGS = [
+    {
+        id: "fox-point-sunny",
+        title: "Sunny room in Fox Point",
+        neighborhood: "Fox Point",
+        description: "A bright corner room in a quiet two-bedroom flat, a short walk from the waterfront. Furnished with a queen bed, desk and big windows. Shared kitchen with a gas stove.",
+        pricePerMonth: 950,
+        availableFrom: "2027-05-25",
+        availableTo: "2027-08-31",
+        roomType: "private",
+        facilities: [
+            "furnished",
+            "kitchen",
+            "laundry",
+            "ac"
+        ],
+        photos: photos("fox-point-sunny"),
+        scanUrl: KITCHEN_SCAN,
+        host: verifiedHost("Lena K.", "Hosting since 2024"),
+        trustStatus: "verified",
+        source: "network",
+        sublet: false,
+        landlordConsentConfirmed: true,
+        commuteByDestination: {
+            work: 25,
+            campus: 12
+        },
+        fairBaselineKey: "fox-point",
+        demoHostReply: "accept",
+        isDemo: true
+    },
+    {
+        id: "downcity-studio",
+        title: "Bright studio near Downcity",
+        neighborhood: "Downcity",
+        description: "A furnished studio on the third floor of a converted mill building, with its own bathroom and a small kitchen. Ten minutes on foot to most downtown offices.",
+        pricePerMonth: 1000,
+        availableFrom: "2027-06-01",
+        availableTo: "2027-09-30",
+        roomType: "private",
+        facilities: [
+            "furnished",
+            "kitchen",
+            "privateBath",
+            "ac",
+            "laundry",
+            "gym"
+        ],
+        photos: photos("downcity-studio"),
+        scanUrl: KITCHEN_SCAN,
+        host: verifiedHost("Marcus T.", "Hosting since 2023"),
+        trustStatus: "verified",
+        source: "network",
+        sublet: false,
+        landlordConsentConfirmed: true,
+        commuteByDestination: {
+            work: 12,
+            campus: 18
+        },
+        fairBaselineKey: "downcity",
+        demoHostReply: "accept",
+        isDemo: true
+    },
+    {
+        id: "federal-hill-sublet",
+        title: "Garden sublet on Federal Hill",
+        neighborhood: "Federal Hill",
+        description: "A furnished room in a shared house with a back garden, sublet for the summer while the tenant is away. Full kitchen. The landlord hasn't confirmed consent for the sublet yet.",
+        pricePerMonth: 940,
+        availableFrom: "2027-05-28",
+        availableTo: "2027-08-20",
+        roomType: "private",
+        facilities: [
+            "furnished",
+            "kitchen"
+        ],
+        photos: photos("federal-hill-sublet"),
+        host: {
+            name: "Ana R.",
+            since: "New host",
+            checks: {
+                email: true,
+                id: false,
+                card: true
+            }
+        },
+        trustStatus: "caution",
+        trustReason: "Landlord consent pending",
+        source: "network",
+        sublet: true,
+        landlordConsentConfirmed: false,
+        commuteByDestination: {
+            work: 25,
+            campus: 27
+        },
+        fairBaselineKey: "federal-hill",
+        demoHostReply: "review",
+        isDemo: true
+    },
+    {
+        id: "smith-hill-quiet",
+        title: "Quiet room on Smith Hill",
+        neighborhood: "Smith Hill",
+        description: "An unfurnished room on a calm residential street, near the park. Shared kitchen and in-unit laundry. Available from June 4.",
+        pricePerMonth: 880,
+        availableFrom: "2027-06-04",
+        availableTo: "2027-09-01",
+        roomType: "private",
+        facilities: [
+            "kitchen",
+            "laundry"
+        ],
+        photos: photos("smith-hill-quiet"),
+        host: verifiedHost("Theo B.", "Hosting since 2022"),
+        trustStatus: "verified",
+        source: "network",
+        sublet: false,
+        landlordConsentConfirmed: true,
+        commuteByDestination: {
+            work: 32,
+            campus: 30
+        },
+        fairBaselineKey: "smith-hill",
+        demoHostReply: "accept",
+        isDemo: true
+    },
+    {
+        id: "west-end-shared",
+        title: "Shared flat in the West End",
+        neighborhood: "West End",
+        description: "A furnished room in a lively four-person flat. Big shared kitchen and a living room that hosts Sunday dinners.",
+        pricePerMonth: 1020,
+        availableFrom: "2027-06-01",
+        availableTo: "2027-08-31",
+        roomType: "shared",
+        facilities: [
+            "furnished",
+            "kitchen",
+            "laundry"
+        ],
+        photos: photos("west-end-shared"),
+        host: verifiedHost("Grace O.", "Hosting since 2025"),
+        trustStatus: "verified",
+        source: "network",
+        sublet: false,
+        landlordConsentConfirmed: true,
+        commuteByDestination: {
+            work: 30,
+            campus: 33
+        },
+        fairBaselineKey: "west-end",
+        demoHostReply: "accept",
+        isDemo: true
+    },
+    {
+        id: "armory-loft",
+        title: "Loft room in the Armory",
+        neighborhood: "Armory",
+        description: "A high-ceilinged furnished loft room in a Victorian house. Air conditioning and a shared kitchen. Ends August 12.",
+        pricePerMonth: 990,
+        availableFrom: "2027-06-01",
+        availableTo: "2027-08-12",
+        roomType: "private",
+        facilities: [
+            "furnished",
+            "kitchen",
+            "ac"
+        ],
+        photos: photos("armory-loft"),
+        host: verifiedHost("Omar S.", "Hosting since 2024"),
+        trustStatus: "verified",
+        source: "network",
+        sublet: false,
+        landlordConsentConfirmed: true,
+        commuteByDestination: {
+            work: 33,
+            campus: 35
+        },
+        fairBaselineKey: "armory",
+        demoHostReply: "accept",
+        isDemo: true
+    },
+    {
+        id: "wayland-square-suite",
+        title: "Suite near Wayland Square",
+        neighborhood: "Wayland Square",
+        description: "A furnished suite with its own bathroom on a leafy street near shops and cafés. A step above Maya's budget.",
+        pricePerMonth: 1100,
+        availableFrom: "2027-06-01",
+        availableTo: "2027-08-31",
+        roomType: "private",
+        facilities: [
+            "furnished",
+            "kitchen",
+            "privateBath",
+            "laundry"
+        ],
+        photos: photos("wayland-square-suite"),
+        host: verifiedHost("June P.", "Hosting since 2021"),
+        trustStatus: "verified",
+        source: "network",
+        sublet: false,
+        landlordConsentConfirmed: true,
+        commuteByDestination: {
+            work: 15,
+            campus: 10
+        },
+        fairBaselineKey: "wayland-square",
+        demoHostReply: "accept",
+        isDemo: true
+    },
+    {
+        id: "olneyville-room",
+        title: "Big room in Olneyville",
+        neighborhood: "Olneyville",
+        description: "A spacious furnished room with parking and in-unit laundry, at a great price. The trade-off is a longer trip downtown.",
+        pricePerMonth: 780,
+        availableFrom: "2027-05-15",
+        availableTo: "2027-08-31",
+        roomType: "private",
+        facilities: [
+            "furnished",
+            "kitchen",
+            "laundry",
+            "parking"
+        ],
+        photos: photos("olneyville-room"),
+        host: verifiedHost("Felix M.", "Hosting since 2023"),
+        trustStatus: "verified",
+        source: "network",
+        sublet: false,
+        landlordConsentConfirmed: true,
+        commuteByDestination: {
+            work: 42,
+            campus: 40
+        },
+        fairBaselineKey: "olneyville",
+        demoHostReply: "accept",
+        isDemo: true
+    },
+    {
+        id: "college-hill-attic",
+        title: "Attic room on College Hill",
+        neighborhood: "College Hill",
+        description: "A cozy furnished attic room a few minutes from campus. There is no kitchen; a microwave and mini-fridge are provided.",
+        pricePerMonth: 870,
+        availableFrom: "2027-06-01",
+        availableTo: "2027-08-31",
+        roomType: "private",
+        facilities: [
+            "furnished",
+            "ac"
+        ],
+        photos: photos("college-hill-attic"),
+        host: verifiedHost("Nadia L.", "Hosting since 2022"),
+        trustStatus: "verified",
+        source: "network",
+        sublet: false,
+        landlordConsentConfirmed: true,
+        commuteByDestination: {
+            work: 22,
+            campus: 6
+        },
+        fairBaselineKey: "college-hill",
+        demoHostReply: "accept",
+        isDemo: true
+    },
+    {
+        id: "elmhurst-garden",
+        title: "Garden-level room in Elmhurst",
+        neighborhood: "Elmhurst",
+        description: "A furnished garden-level room with a full kitchen, next to the park. Opens June 20.",
+        pricePerMonth: 860,
+        availableFrom: "2027-06-20",
+        availableTo: "2027-09-15",
+        roomType: "private",
+        facilities: [
+            "furnished",
+            "kitchen"
+        ],
+        photos: photos("elmhurst-garden"),
+        host: verifiedHost("Sam W.", "Hosting since 2024"),
+        trustStatus: "verified",
+        source: "network",
+        sublet: false,
+        landlordConsentConfirmed: true,
+        commuteByDestination: {
+            work: 28,
+            campus: 25
+        },
+        fairBaselineKey: "elmhurst",
+        demoHostReply: "accept",
+        isDemo: true
+    },
+    {
+        id: "mount-pleasant-sublet",
+        title: "Sublet near Mount Pleasant",
+        neighborhood: "Mount Pleasant",
+        description: "A furnished summer sublet with a full kitchen. The landlord hasn't confirmed consent for the sublet yet.",
+        pricePerMonth: 1060,
+        availableFrom: "2027-06-01",
+        availableTo: "2027-08-31",
+        roomType: "private",
+        facilities: [
+            "furnished",
+            "kitchen"
+        ],
+        photos: photos("mount-pleasant-sublet"),
+        host: {
+            name: "Rosa D.",
+            since: "New host",
+            checks: {
+                email: true,
+                id: true,
+                card: false
+            }
+        },
+        trustStatus: "caution",
+        trustReason: "Landlord consent pending",
+        source: "network",
+        sublet: true,
+        landlordConsentConfirmed: false,
+        commuteByDestination: {
+            work: 27,
+            campus: 29
+        },
+        fairBaselineKey: "mount-pleasant",
+        demoHostReply: "review",
+        isDemo: true
+    },
+    {
+        id: "jewelry-district-studio",
+        title: "Studio in the Jewelry District",
+        neighborhood: "Jewelry District",
+        description: "Suspended listing kept only to test that it never appears.",
+        pricePerMonth: 650,
+        availableFrom: "2027-06-01",
+        availableTo: "2027-08-31",
+        roomType: "private",
+        facilities: [
+            "furnished",
+            "kitchen"
+        ],
+        photos: photos("jewelry-district-studio", 1),
+        host: {
+            name: "Ike V.",
+            since: "New host",
+            checks: {
+                email: true,
+                id: false,
+                card: false
+            }
+        },
+        trustStatus: "suspended",
+        trustReason: "Removed after reports of a deposit request before viewing",
+        source: "network",
+        sublet: false,
+        landlordConsentConfirmed: false,
+        commuteByDestination: {
+            work: 10,
+            campus: 14
+        },
+        fairBaselineKey: "jewelry-district",
+        demoHostReply: "review",
+        isDemo: true
+    }
 ];
+function getListing(id) {
+    return LISTINGS.find((l)=>l.id === id);
+}
+return LISTINGS;
+})();
+/* DATA END */
+
+// Short letters for the slider markers, matching the fixtures in the docs (A = Fox Point, D = Downcity, E = the Federal Hill sublet).
+const LETTERS = {
+  "fox-point-sunny": "A", "smith-hill-quiet": "B", "wayland-square-suite": "C", "downcity-studio": "D",
+  "federal-hill-sublet": "E", "west-end-shared": "F", "armory-loft": "G", "olneyville-room": "H",
+  "college-hill-attic": "I", "elmhurst-garden": "J", "mount-pleasant-sublet": "K",
+};
+// Suspended listings never reach the seeker, here or in the app.
+const ROOMS = DEMO_LISTINGS.filter((l) => l.trustStatus !== "suspended").map((l) => ({
+  id: LETTERS[l.id] || l.id,
+  hood: l.title,
+  kind: `${l.roomType === "shared" ? "Shared room" : "Private room"} · ${l.neighborhood}${l.trustReason ? " · " + l.trustReason : ""}`,
+  pricePerMonth: l.pricePerMonth,
+  commute: l.commuteByDestination,
+  availableFrom: l.availableFrom,
+  availableTo: l.availableTo,
+  facilities: l.facilities,
+  trust: l.source === "outside" ? "outside" : l.trustStatus === "caution" ? "caution" : "verified",
+  trustReason: l.trustReason,
+}));
 
 const MAYA = {
   price: { ideal: 900, limit: 1050 },
@@ -811,6 +1218,7 @@ const MAYA = {
   dates: { start: "2027-06-01", end: "2027-08-15", maxUncoveredDays: 5 },
   facilities: { furnished: "important", kitchen: "must", laundry: "none", gym: "none", privateBath: "none", ac: "none", parking: "none" },
   importance: { price: 8, commute: 6, dates: 4, facilities: 2 },
+  preferVerified: true,
 };
 
 const FACTOR_LABEL = { price: "Price", commute: "Commute", dates: "Dates", facilities: "Facilities" };
@@ -863,6 +1271,7 @@ function syncControls() {
   $("#gap").value = prefs.dates.maxUncoveredDays;
   for (const f of FACTORS) $("#imp-" + f).value = prefs.importance[f];
   for (const k of FACILITY_KEYS) $(`#fac-${k}-${prefs.facilities[k] || "none"}`).checked = true;
+  $("#prefer-verified").checked = prefs.preferVerified !== false;
 }
 
 function readControls() {
@@ -874,6 +1283,7 @@ function readControls() {
   prefs.dates.maxUncoveredDays = +$("#gap").value;
   for (const f of FACTORS) prefs.importance[f] = +$("#imp-" + f).value;
   for (const k of FACILITY_KEYS) prefs.facilities[k] = document.querySelector(`input[name="fac-${k}"]:checked`).value;
+  prefs.preferVerified = $("#prefer-verified").checked;
 }
 
 // Keep ideal <= limit by pushing the other thumb along.
@@ -966,14 +1376,21 @@ function mathHTML(r) {
   if (L.commuteMinutes > P.commute.ideal) lines.push(`Commute    = 100 × (${P.commute.limit} − ${L.commuteMinutes}) ÷ (${P.commute.limit} − ${P.commute.ideal}) = ${fmt1(r.factorScores.commute)}`);
   if (gap > 0) lines.push(`Dates      = 100 × (${P.dates.maxUncoveredDays} − ${gap}) ÷ (${P.dates.maxUncoveredDays} − 0) = ${fmt1(r.factorScores.dates)}`);
   if (wanted && earned < wanted) lines.push(`Facilities = 100 × ${earned} ÷ ${wanted} = ${fmt1(r.factorScores.facilities)}`);
-  lines.push(`Total      = ` + active.filter((f) => r.weights[f] > 0).map((f) => `${pct(r.weights[f])} × ${fmt1(r.factorScores[f])}`).join(" + ") + ` = ${fmt1(r.exactScore)}`);
+  lines.push(`Subtotal   = ` + active.filter((f) => r.weights[f] > 0).map((f) => `${pct(r.weights[f])} × ${fmt1(r.factorScores[f])}`).join(" + ") + ` = ${fmt1(r.baseScore)}`);
+  const trusted = r.trustFactor < 1;
+  const why = L.trustReason || "host not fully verified";
+  if (trusted) lines.push(`Trust      = ${fmt1(r.baseScore)} × ${r.trustFactor} (${why}) = ${fmt1(r.exactScore)}`);
+  const trustRows = trusted
+    ? `<tr><td colspan="5">Subtotal</td><td class="num">${fmt1(r.baseScore)}</td></tr>
+       <tr><td colspan="5">Trust: ${why} (Prefer verified hosts is on)</td><td class="num">× ${r.trustFactor}</td></tr>`
+    : "";
 
   return `<details class="math" data-id="${L.id}"${openMath.has(L.id) ? " open" : ""}>
     <summary>Show the math</summary>
     <div class="table-wrap"><table>
       <thead><tr><th>Factor</th><th>This room</th><th>Ideal → limit</th><th class="num">Score</th><th class="num">Weight</th><th class="num">Points</th></tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr><td colspan="5">Total, rounded</td><td class="num">${fmt1(r.exactScore)} → ${r.score}</td></tr></tfoot>
+      <tfoot>${trustRows}<tr><td colspan="5">Total, rounded</td><td class="num">${fmt1(r.exactScore)} → ${r.score}</td></tr></tfoot>
     </table></div>
     <div class="working">${lines.join("\n")}</div>
   </details>`;

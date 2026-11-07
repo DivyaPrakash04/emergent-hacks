@@ -11,7 +11,7 @@ import {
   type Listing,
   type Preferences,
 } from "../platform/lib/roomsure/rankListings.ts";
-import { engineForDemo, engineInDemo } from "./build-demo.mjs";
+import { dataForDemo, dataInDemo, engineForDemo, engineInDemo } from "./build-demo.mjs";
 
 const rooms: Listing[] = [
   { id: "A", pricePerMonth: 950, commuteMinutes: 25, availableFrom: "2027-06-01", availableTo: "2027-08-20", facilities: ["furnished", "kitchen"] },
@@ -183,4 +183,9 @@ test("outside listings get 0.7 and their own reason", () => {
   assert.equal(r.trustFactor, 0.7);
   assert.equal(r.score, Math.round(76.6667 * 0.7));
   assert.equal(r.gives[0].label, "Outside listing, not verified by Roomsure (−30%)");
+});
+
+test("demo.html shows the same rooms as the app (run node ranking/build-demo.mjs if this fails)", () => {
+  const html = readFileSync(new URL("./demo.html", import.meta.url), "utf8");
+  assert.equal(dataInDemo(html), dataForDemo().trim());
 });
