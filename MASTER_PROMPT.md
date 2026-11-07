@@ -1,99 +1,75 @@
 ﻿# Roomsure Master Build Prompt
 
-Copy this prompt into a coding LLM after opening the Roomsure project repository. The detailed requirements file is the source of truth for implementation specifics.
+Copy this prompt into a coding LLM after opening the Roomsure repository. The requirements file is the source of truth for product behavior. `ARCHITECTURE.md` is the source of truth for structure.
 
 ---
 
-You are implementing **Roomsure**, a hackathon web demo for finding and assessing short-term rooms (one to six months). Work in the existing repository. First inspect its files, conventions, and current git changes. Do not overwrite or discard existing user work. The repository may initially contain only documents and a standalone HTML prototype.
+You are building **Roomsure**, a hackathon web app for finding and checking short-term rooms (one to six months). Work in the existing repository. First inspect its files, branches and open pull requests. Preserve teammates' work; never overwrite or discard it.
 
-## Read these references first
+## Read these first
 
-1. `README.md` for the product goal and team context.
-2. `Roomsure MVP Requirements (for LLM build).md` for authoritative product scope and functional behavior.
-3. `ARCHITECTURE.md` for technical boundaries, data persistence decisions, contracts, and diagrams.
-4. `Roomsure Prototype.html` for visual direction and existing interaction ideas.
-5. `Roomsure Pitch Deck.pptx` only if pitch context is needed.
+1. `README.md`: product summary and repository map.
+2. `Roomsure MVP Requirements (for LLM build).md`: scope, behavior, fixtures, acceptance criteria.
+3. `ARCHITECTURE.md`: folders, types, routes, Claude adapter, deployment.
+4. `demo-script.md`: the two-minute path the build must support.
+5. `ranking/README.md` (engine), `platform/README.md` (accounts and payments), `roomwalk/README.md` (3D viewer).
 
-If this prompt conflicts with the detailed requirements, follow the detailed requirements for product behavior and `ARCHITECTURE.md` for technical implementation. If the user gives a newer explicit direction, follow it and update the docs where appropriate.
+If these conflict, follow the requirements for behavior and `ARCHITECTURE.md` for structure. A newer direct instruction from the team overrides both; update the docs to match.
+
+## What already exists
+
+- `platform/`: a Next.js 16 app with real accounts, sessions, a Passport, simulated ID and card checks, and a simulated $950 checkout (PR #2).
+- `ranking/`: a pure TypeScript ranking engine with passing tests and an offline swipe demo (PR #4).
+- `roomwalk/`: a first-person Gaussian-splat viewer with a demo room, plus a video-to-3D scan pipeline for cloud or local GPUs (PR #3).
+
+- `lovable/`: the rules and prompts the team uses to design the UI in Lovable. The Lovable repo is mirrored into the `lovable-ui` branch. Port those screens; don't redesign them.
+
+Your job is to join these into one app in `platform/`, not to rebuild them.
 
 ## Product outcome
 
-Deliver one coherent, responsive demo journey:
+One responsive journey on the live link:
 
-**describe needs → review preferences → see explainable ranked rooms → swipe the same rooms → shortlist and view a room/video → mock mutual match/chat**, plus a separate **paste outside listing → scam verdict with quoted evidence** flow.
+**Continue as Maya → describe needs (Claude or rules) → edit preferences → swipe the ranked deck (or list) → near misses with fixes → shortlist → detail with score math → walk the room in 3D → simulated host reply → mock chat → simulated reserve**
 
-The app should remain usable if all AI providers are unavailable. Build the smallest reliable version that demonstrates the product clearly.
+Plus a separate **paste outside listing → facts, quoted evidence, verdict** check.
 
-## Technology and architecture
+## Non-negotiables
 
-- Prefer one Next.js App Router app with React, TypeScript, and Tailwind CSS unless the repository already has a working equivalent stack.
-- Use local JSON for synthetic seed listings; use lightweight client state/local storage for demo preferences, likes, and mock host decisions.
-- Implement ranking and scam rules as deterministic TypeScript modules. The LLM must not determine listing scores.
-- If AI is configured, call it server-side, validate its output with a schema, and keep keys out of browser bundles.
-- Provide deterministic fallbacks. Never make core navigation depend on an LLM, external inventory, payment, or identity provider.
-- Associate supplied videos/posters with stable listing IDs. Provide loading/error/fallback UI. Only call an asset 360° if it is true 360° media and a compatible viewer is implemented.
-- Avoid unnecessary dependencies and services. Do not introduce a real database, auth, payment, or ID-verification integration for this hackathon demo.
+- Accounts are real. ID, card, email delivery and payment results are **simulated** (`PROVIDER_MODE=demo`). Never add form fields for real ID documents, selfies or card numbers.
+- The ranking engine is the only source of scores. Claude never ranks, scores or decides a scam verdict.
+- Claude runs server-side only, with Zod-validated output, an 8-second timeout, no retries, and a rule fallback. The UI says which path ran.
+- Prices for checkout come from server-side seed data, never from the client.
+- Suspended listings never appear in the seeker flow.
+- Outside listings always say **Outside · not verified by Roomsure**. "No issues found" is never "safe".
+- Sample 3D scans are labeled "Sample 3D scan · demo". A scan is an inspection aid, not proof.
+- No protected traits in forms, prompts, data or ranking. No scraping of third-party sites.
+- Label demo data, simulated checks, host replies, chat and payments as such.
 
-## Non-negotiable product constraints
+## Priorities
 
-- No real ID, driver's license, credit-card, payment, or deposit information may be requested or stored.
-- Verification, match/chat, host actions, and listing data must be honestly labeled demo/simulated as applicable.
-- Never scrape third-party sites. Outside listings are analyzed only from user-pasted text.
-- Do not collect, infer, store, or rank by protected traits (including race, religion, gender, disability, national origin, and family status).
-- A listing marked outside is always labeled **Outside · not verified by Roomsure**.
-- “No issues found” is not the same as safe or verified. Never promise that a score, video, or badge guarantees safety.
-- Suspended listings are excluded from results.
+### P0 (in this order)
+1. Integration branch: merge PRs #2, #3 and #4; get `platform/` running.
+2. Move the engine to `platform/lib/ranking/`; add the trust switch (`preferVerified`) and fixture E; keep all tests passing.
+3. Seed data (`platform/data/`), demo accounts created at startup, `demo/login` and `demo/reset` routes.
+4. Rooms page: intake box, preferences, deck and list, near misses.
+5. Detail page: score math, trust and fair price, the RoomWalk overlay, then match → chat → reserve.
+6. Scam check page: rules first, then Claude assist.
+7. Claude intake with the rule fallback.
+8. Vercel deploy and a full run-through on the live link and on the laptop.
 
-## Implementation priorities
-
-### P0: Build first
-
-1. Shared TypeScript data types and synthetic seed listings.
-2. Pure `rankListings` function matching the detailed spec, including hard filters, trust factors, weighted satisfaction, stable sort, score breakdown, and reasons.
-3. Preferences UI with editable ideal/limit controls and reorderable priorities; rerank locally on every change.
-4. Result cards with score, explanation, fair-price note, trust status/reason, and approximate commute.
-5. Swipe deck consuming the same ranked results; visible pass/like controls; shortlist of likes.
-6. Room detail with matching stable-ID video and fallback behavior.
-7. Outside-listing checker with exact quoted evidence and risk verdict.
-8. Clearly mocked verification and mutual-match/chat states.
-9. Responsive, accessible visual polish and a stable two-minute demo flow.
-
-### P1: Only after P0 works end to end
-
-- AI intake parser and optional local/cloud provider adapter.
-- Host paste-to-listing extraction/review/publish.
-- Additional seed records or optional enhancements explicitly marked in the spec.
-
-## Critical scoring fixture
-
-Use the formula, not hardcoded outcomes. For the four-dimension fixture in the requirements, Room A calculates to **77** and Room D calculates to **73**. Room B calculates to **54**. The original fixture is consistent with its formula; preserve these expected values.
+### P1 (only after P0 works end to end)
+Host "List your room" draft, live video-to-3D scanning, and a second persona.
 
 ## Working method
 
-1. Inspect the repository and report the existing stack and any constraints before making broad changes.
-2. Create or adapt the app scaffold with the smallest sensible structure.
-3. Define shared `Listing`, `Preferences`, and `RankedRoom` types before parallel screen work.
-4. Implement the ranking module and a small data fixture first; ensure displayed scores are reproducible.
-5. Build the end-to-end P0 journey, keeping list/swipe/detail/shortlist connected to one ranked result source.
-6. Add AI or host flow only after fallbacks and the main demo path work.
-7. Keep changes scoped. Do not rewrite unrelated files or delete reference artifacts.
-8. If the user requests verification, run the relevant checks and report exactly what ran. Do not claim checks were run if they were not.
-9. Summarize changed files, key behavior, limitations, and the next useful task.
+1. Report the current branches, stack and constraints before broad changes.
+2. Make small, reviewable commits. Keep imports explicit and module boundaries clear (`ARCHITECTURE.md` section 3).
+3. Run `npm test` and `npm run build` in `platform/`, and `node --test` for the ranking fixtures, before calling a step done.
+4. Check the journey in a browser at phone and desktop widths.
+5. Report exactly which checks ran and what failed. Never claim a check you did not run.
+6. Summarize the changed files, the behavior, the known limits and the next task.
 
-## Acceptance before calling the MVP ready
+## Ready for the demo when
 
-Use the full acceptance list in `Roomsure MVP Requirements (for LLM build).md`. At minimum confirm that:
-
-- Preferences and priority changes immediately rerank without reload.
-- List and swipe use identical ordering and score values.
-- The score fixture follows the stated formula.
-- Likes appear in shortlist and open the correct detail/video.
-- A suspicious pasted listing yields a high-risk verdict with actual quoted evidence.
-- AI outage does not block the main demo.
-- No real identity/payment data is collected and demo claims are explicit.
-
-Do not add unrelated features. Optimize for a clear, reliable demonstration, not production-marketplace completeness.
-
-
-
-
+All acceptance criteria in section 10 of the requirements pass on the production link. The demo script runs in under two minutes. The laptop backup and recording are ready.
