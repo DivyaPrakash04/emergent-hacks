@@ -1,0 +1,37 @@
+{
+  "flow": "intake",
+  "description": "Seeker sentence -> structured preferences. baseline = offline rules, v1 = Claude (claude-opus-5-5, low effort) through lib/ai/claude.ts.",
+  "metrics": [
+    {
+      "id": "all_correct",
+      "label": "All correct",
+      "kind": "binary"
+    },
+    {
+      "id": "fields",
+      "label": "Fields right",
+      "kind": "continuous"
+    },
+    {
+      "id": "no_invention",
+      "label": "No invention",
+      "kind": "binary"
+    },
+    {
+      "id": "asks",
+      "label": "Asks if needed",
+      "kind": "binary"
+    }
+  ],
+  "perf_fields": [
+    "latency_s"
+  ],
+  "harness_paths": [
+    "evals/cases.ts",
+    "evals/grade.ts",
+    "lib/ai/claude.ts",
+    "lib/ai/schemas.ts",
+    "lib/roomsure/intake.ts",
+    "lib/roomsure/scam.ts"
+  ]
+}
