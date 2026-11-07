@@ -250,15 +250,10 @@ details.filtered summary{cursor:pointer;font-weight:600}
 
   <!-- VERIFY -->
   <section id="view-verify" hidden>
-    <h2 class="section-title">Everyone is verified before they can match</h2>
-    <p class="lede">A school email is where other apps stop. On Roomsure it's the first of four checks. Chat opens only after both sides say yes, and deposits are held until move-in.</p>
-    <div class="steps" id="steps"></div>
-    <div class="row" style="margin-top:14px"><button class="btn" id="runVerify">Run verification demo</button><span class="ai-note" style="margin:0">Mocked. No real ID or card data is used.</span></div>
-    <div class="statuses">
-      <div class="status" style="background:var(--good-soft)"><h3 style="color:var(--good)">Verified</h3><p>All checks passed and no scam signals. Can list, apply and match.</p></div>
-      <div class="status" style="background:var(--warn-soft)"><h3 style="color:var(--warn)">Caution · with the reason</h3><p>A check is pending, a sublet lacks landlord consent, or the price is unusually low. Paused from new matches until resolved.</p></div>
-      <div class="status" style="background:var(--bad-soft)"><h3 style="color:var(--bad)">Suspended</h3><p>A report confirmed on review. Hidden everywhere, and blocked from rejoining by ID, card, phone and device.</p></div>
-    </div>
+    <h2 class="section-title">Your Roomsure account</h2>
+    <p class="lede">Demo only · No email is sent, no identity documents are collected, and no money moves. Verification here does not establish anyone’s real identity.</p>
+    <div id="accountRoot"></div>
+
   </section>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -427,15 +422,10 @@ details.filtered summary{cursor:pointer;font-weight:600}
   });
   $('runCheck').click();
 
-  // verify
-  const STEPS=[['Level 1','School or work email','A code sent to your .edu or employer address.'],['Level 2','Government ID + live selfie','Through an ID-verification provider. We store only pass or fail.'],['Level 3','$1 card check','A card in your own name, never charged.'],['Level 4 · hosts','Right to rent','Address matches owner records, or landlord consent for a sublet.']];
-  let done=0;
-  function renderSteps(){ $('steps').innerHTML=STEPS.map((s,i)=>`<div class="step ${i<done?'done':''}"><span class="lvl">${s[0]}</span><h3>${s[1]}</h3><p>${s[2]}</p><span class="st">${i<done?'✓ Passed':'Pending'}</span></div>`).join(''); }
-  $('runVerify').addEventListener('click',()=>{ done=0; renderSteps(); const tick=()=>{ done++; renderSteps(); if(done<STEPS.length) setTimeout(tick,550); else toast('Verified. Green badge earned.'); }; setTimeout(tick,300); });
-  renderSteps();
 
   render();
 })();
 </script>
 
+<script src="demo-account.js"></script>
 </body></html>
