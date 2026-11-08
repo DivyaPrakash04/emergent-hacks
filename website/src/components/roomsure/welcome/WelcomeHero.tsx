@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PhotoCollage } from "./PhotoCollage";
+import { HeroDeckPreview } from "./HeroDeckPreview";
 import { TrustPoints } from "./TrustPoints";
 import { CreateAccountDialog } from "./CreateAccountDialog";
 
@@ -35,7 +36,9 @@ export function WelcomeHero() {
         </p>
       </div>
       <div className="order-1 lg:order-2">
-        <PhotoCollage />
+        {/* Phones keep the light photo collage above the fold; larger screens show a real ranked card. */}
+        <div className="lg:hidden"><PhotoCollage /></div>
+        <div className="hidden lg:block"><HeroDeckPreview /></div>
       </div>
     </section>
   );

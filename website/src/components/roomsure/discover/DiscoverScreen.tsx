@@ -111,9 +111,9 @@ export function DiscoverScreen() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-5 lg:grid-cols-[1fr_400px_1fr] lg:py-8">
-        <div className="hidden lg:block" />
-        <section aria-label="Room deck" className="mx-auto w-full max-w-[400px] space-y-4">
+      {/* The deck takes the free width (a wide card from xl up); preferences get a fixed, readable column. */}
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:py-8 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <section aria-label="Room deck" className="mx-auto w-full max-w-[400px] space-y-4 lg:max-w-[440px] xl:max-w-[720px]">
           <DeckHeader position={total - deck.length + 1} total={total} view={view} onView={setView} onAdjust={adjust} />
 
           {view === "list" ? (
