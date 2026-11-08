@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { MotionConfig, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import { api } from "@/lib/roomsure/api";
 import { applyFix, buildDeck } from "@/lib/roomsure/deck";
-import { listingsQuery } from "@/lib/roomsure/queries";
+import { useListings } from "@/lib/roomsure/queries";
 import { actions, useRoomsure } from "@/lib/roomsure/state";
 import type { Fix } from "@/lib/roomsure/rankListings";
 import type { RoomListing } from "@/lib/roomsure/types";
@@ -21,7 +20,7 @@ import { LivePreferencesPanel } from "@/components/roomsure/preferences/LivePref
 import type { SwipeDir } from "./SwipeCard";
 
 export function DiscoverScreen() {
-  const { data: listings } = useSuspenseQuery(listingsQuery);
+  const listings = useListings();
   const preferences = useRoomsure((s) => s.preferences);
   const destination = useRoomsure((s) => s.destination);
   const swipeHistory = useRoomsure((s) => s.swipeHistory);

@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { listingsQuery } from "@/lib/roomsure/queries";
+import { useListings } from "@/lib/roomsure/queries";
 import { useRoomsure } from "@/lib/roomsure/state";
 import { Button } from "@/components/ui/button";
 import { ReceiptCard } from "@/components/roomsure/chat/ReceiptCard";
@@ -8,7 +7,7 @@ import { PassportCard } from "./PassportCard";
 import { ResetDemo } from "./ResetDemo";
 
 export function PassportScreen() {
-  const { data: listings } = useSuspenseQuery(listingsQuery);
+  const listings = useListings();
   const reservations = useRoomsure((s) => s.reservations);
   const list = Object.values(reservations);
   return (

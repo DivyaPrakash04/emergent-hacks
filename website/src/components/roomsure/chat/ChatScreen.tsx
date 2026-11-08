@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { ArrowLeft, Info } from "lucide-react";
 import { chatSteps, openingMessages, type ChatMessage } from "@/lib/roomsure/chat";
-import { listingsQuery } from "@/lib/roomsure/queries";
+import { useListings } from "@/lib/roomsure/queries";
 import { useRoomsure } from "@/lib/roomsure/state";
 import { Button } from "@/components/ui/button";
 import { money } from "@/components/roomsure/discover/format";
@@ -14,7 +13,7 @@ import { ReserveSheet } from "./ReserveSheet";
 import { ReceiptCard } from "./ReceiptCard";
 
 export function ChatScreen({ id }: { id: string }) {
-  const { data: listings } = useSuspenseQuery(listingsQuery);
+  const listings = useListings();
   const listing = listings.find((l) => l.id === id);
   const reservation = useRoomsure((s) => s.reservations[id]);
   const verified = useRoomsure((s) => s.checks.id);

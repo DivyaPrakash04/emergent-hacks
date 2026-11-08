@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Box, CalendarDays, Check, Clock, Heart, Home, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/roomsure/api";
 import { buildDeck } from "@/lib/roomsure/deck";
 import { facilityText } from "@/lib/roomsure/defaults";
-import { listingsQuery } from "@/lib/roomsure/queries";
+import { useHydrated, useListings } from "@/lib/roomsure/queries";
+import { isHostPublished } from "@/lib/roomsure/host";
+import { DiscoverPending } from "@/components/roomsure/discover/DiscoverStates";
 import { actions, useRoomsure } from "@/lib/roomsure/state";
 import { Button } from "@/components/ui/button";
 import { money, shortDate } from "@/components/roomsure/discover/format";
@@ -18,6 +19,7 @@ import { DateFit } from "./DateFit";
 import { FairPriceBar } from "./FairPriceBar";
 import { HostCard } from "./HostCard";
 import { TourOverlay } from "./TourOverlay";
+import { HouseDetails, ROOM_TYPE_LABEL } from "./HouseDetails";
 
 function roomType(title: string) {
   const t = title.toLowerCase();
@@ -28,7 +30,8 @@ function roomType(title: string) {
 
 export function RoomScreen({ id }: { id: string }) {
   const navigate = useNavigate();
-  const { data: listings } = useSuspenseQuery(listingsQuery);
+  const listings = useListings();
+  const hydrated = useHydrated();
   const preferences = useRoomsure((s) => s.preferences);
   const destination = useRoomsure((s) => s.destination);
   const [tour, setTour] = useState(false);
@@ -39,6 +42,7 @@ export function RoomScreen({ id }: { id: string }) {
     return { card: d.deck.find((c) => c.listing.id === id), miss: d.nearMisses.find((m) => m.listing.id === id) };
   }, [preferences, listings, destination, id]);
 
+  if (!listing && isHostPublished(id) && !hydrated) return <DiscoverPending />;
   if (!listing) {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center">
@@ -61,7 +65,7 @@ export function RoomScreen({ id }: { id: string }) {
   const facts = [
     { icon: Clock, text: `${listing.commute[destination]} min to ${destination === "work" ? "work" : "campus"}` },
     { icon: CalendarDays, text: `Available ${shortDate(listing.availableFrom)} – ${shortDate(listing.availableTo)}` },
-    { icon: Home, text: roomType(listing.title) },
+    { icon: Home, text: listing.details ? ROOM_TYPE_LABEL[listing.details.roomType] : roomType(listing.title) },
   ];
 
   return (
@@ -85,6 +89,10 @@ export function RoomScreen({ id }: { id: string }) {
           </li>
         </ul>
         <p className="text-[15px] leading-relaxed text-muted-foreground">{listing.description}</p>
+        {listing.hostPublished && (
+          <p className="rounded-xl bg-warm-soft px-3 py-2 text-[13px] text-foreground">Demo listing: published on “List your room” in this browser.</p>
+        )}
+        {listing.details && <Section title="House details"><HouseDetails details={listing.details} /></Section>}
 
         {card ? (
           <>
