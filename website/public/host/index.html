@@ -6,92 +6,59 @@
 <title>List your room · Roomsure</title>
 <style>
   :root {
-    --bg: #faf3e7;
-    --card: #ffffff;
-    --ink: #22372f;
-    --muted: #6b7a72;
-    --green: #2d6a55;
-    --green-dark: #1f5241;
-    --amber: #e9b54b;
-    --edge: rgba(34, 55, 47, 0.12);
+    --bg: #faf3e7; --card: #ffffff; --ink: #22372f; --muted: #6b7a72;
+    --green: #2d6a55; --green-dark: #1f5241; --edge: rgba(34, 55, 47, 0.12);
   }
   * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  }
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 18px clamp(16px, 5vw, 48px);
-  }
-  .logo { font-weight: 800; font-size: 20px; letter-spacing: -0.01em; color: var(--ink); text-decoration: none; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; justify-content: space-between;
+    padding: 18px clamp(16px, 5vw, 48px); }
+  .logo { font-weight: 800; font-size: 20px; color: var(--ink); text-decoration: none; }
   .logo span { color: var(--green); }
-  .badge {
-    background: #fdeccd; color: #7a5a18; border-radius: 999px;
-    font-size: 12.5px; font-weight: 600; padding: 6px 12px;
-  }
-  main { max-width: 860px; margin: 0 auto; padding: 8px clamp(16px, 5vw, 48px) 80px; }
-  h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.08; letter-spacing: -0.02em; margin: 18px 0 10px; font-weight: 800; }
+  .badge { background: #fdeccd; color: #7a5a18; border-radius: 999px;
+    font-size: 12.5px; font-weight: 600; padding: 6px 12px; }
+  main { max-width: 900px; margin: 0 auto; padding: 8px clamp(16px, 5vw, 48px) 80px; }
+  h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.08; letter-spacing: -0.02em;
+    margin: 18px 0 10px; font-weight: 800; }
   h1 em { color: var(--green); font-style: normal; }
   .sub { color: var(--muted); max-width: 56ch; margin: 0 0 30px; }
-  .card {
-    background: var(--card); border: 1px solid var(--edge); border-radius: 18px;
-    padding: 22px; margin: 18px 0; box-shadow: 0 2px 14px rgba(34, 55, 47, 0.05);
-  }
+  .card { background: var(--card); border: 1px solid var(--edge); border-radius: 18px;
+    padding: 22px; margin: 18px 0; box-shadow: 0 2px 14px rgba(34,55,47,0.05); }
   .step { display: flex; gap: 12px; align-items: baseline; margin-bottom: 12px; }
-  .step .n {
-    background: var(--green); color: #fff; border-radius: 999px; width: 26px; height: 26px;
-    display: grid; place-items: center; font-size: 14px; font-weight: 700; flex: none;
-    transform: translateY(4px);
-  }
+  .step .n { background: var(--green); color: #fff; border-radius: 999px; width: 26px;
+    height: 26px; display: grid; place-items: center; font-size: 14px; font-weight: 700;
+    flex: none; transform: translateY(4px); }
   .step h2 { margin: 0; font-size: 20px; letter-spacing: -0.01em; }
-  video {
-    width: 100%; max-width: 330px; border-radius: 14px; display: block;
-    background: #111; aspect-ratio: 9 / 16;
-  }
-  .row { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
-  .row > div { flex: 1 1 260px; min-width: 0; }
-  .btn {
-    display: inline-block; background: var(--green); color: #fff; text-decoration: none;
-    border: 0; border-radius: 999px; padding: 12px 22px; font: inherit; font-weight: 650;
-    font-size: 15px; cursor: pointer;
-  }
+  .samples { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+  .sample video { width: 100%; max-width: 250px; border-radius: 12px; display: block;
+    background: #111; aspect-ratio: 9 / 16; }
+  .sample h3 { margin: 12px 0 4px; font-size: 16px; }
+  .sample p { margin: 0 0 10px; color: var(--muted); font-size: 13.5px; }
+  .btn { display: inline-block; background: var(--green); color: #fff; text-decoration: none;
+    border: 0; border-radius: 999px; padding: 11px 20px; font: inherit; font-weight: 650;
+    font-size: 14.5px; cursor: pointer; }
   .btn:hover { background: var(--green-dark); }
   .btn.ghost { background: transparent; color: var(--green); border: 1.5px solid var(--green); }
-  .hint { color: var(--muted); font-size: 13.5px; margin-top: 10px; }
-  .drop {
-    border: 2px dashed rgba(45, 106, 85, 0.45); border-radius: 14px;
-    padding: 36px 20px; text-align: center; cursor: pointer; transition: background 0.15s, border-color 0.15s;
-  }
+  .hint { color: var(--muted); font-size: 13.5px; margin-top: 14px; }
+  .drop { border: 2px dashed rgba(45,106,85,0.45); border-radius: 14px;
+    padding: 36px 20px; text-align: center; cursor: pointer; transition: 0.15s; }
   .drop.over { background: #eef5f1; border-color: var(--green); }
   .drop strong { color: var(--green); }
   #file { display: none; }
   .tiny { color: var(--muted); font-size: 12.5px; }
-  /* generation sequence */
-  #gen { display: none; }
-  .stage { display: flex; align-items: center; gap: 10px; padding: 6px 0; color: var(--muted); font-size: 15px; }
-  .stage .dot {
-    width: 18px; height: 18px; border-radius: 50%; flex: none;
-    border: 2px solid var(--edge); display: grid; place-items: center; font-size: 11px; color: #fff;
-  }
-  .stage.active { color: var(--ink); }
-  .stage.active .dot { border-color: var(--amber); animation: spin 1s linear infinite; border-top-color: transparent; }
-  .stage.done { color: var(--ink); }
-  .stage.done .dot { background: var(--green); border-color: var(--green); }
-  .stage.done .dot::after { content: "✓"; }
-  @keyframes spin { to { transform: rotate(1turn); } }
-  @media (prefers-reduced-motion: reduce) { .stage.active .dot { animation: none; } }
-  .bar { height: 8px; background: #efe7d6; border-radius: 999px; overflow: hidden; margin: 14px 0 4px; }
-  .bar i { display: block; height: 100%; width: 0%; background: var(--green); border-radius: 999px; transition: width 0.5s; }
-  /* result */
-  #result { display: none; }
+  #genCard, #resultCard { display: none; }
+  .bar { height: 10px; background: #efe7d6; border-radius: 999px; overflow: hidden; margin: 6px 0 12px; }
+  .bar i { display: block; height: 100%; width: 0%; background: var(--green);
+    border-radius: 999px; transition: width 1.2s linear; }
+  .state { font-size: 15px; font-weight: 650; margin: 0 0 8px; }
+  .state.err { color: #b3362b; font-size: 13.5px; }
+  #eta { color: var(--muted); font-size: 13.5px; margin: 0; font-variant-numeric: tabular-nums; }
   .frame-wrap { border-radius: 14px; overflow: hidden; border: 1px solid var(--edge); }
-  iframe { display: block; width: 100%; height: min(68vh, 560px); border: 0; }
-  .note {
-    background: #fdf6e4; border: 1px solid #ecd9a8; color: #6c5415;
-    border-radius: 12px; padding: 10px 14px; font-size: 13.5px; margin-top: 14px;
-  }
-  footer { color: var(--muted); font-size: 12.5px; padding: 0 clamp(16px, 5vw, 48px) 40px; max-width: 860px; margin: 0 auto; }
+  iframe { display: block; width: 100%; height: min(70vh, 580px); border: 0; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+  footer { color: var(--muted); font-size: 12.5px; padding: 0 clamp(16px,5vw,48px) 40px;
+    max-width: 900px; margin: 0 auto; }
 </style>
 </head>
 <body>
@@ -107,18 +74,22 @@
 
   <div class="card">
     <div class="step"><span class="n">1</span><h2>See what a scan looks like — try it out!</h2></div>
-    <div class="row">
-      <div>
+    <div class="samples">
+      <div class="sample">
         <video src="/host/sample-kitchen.mp4" controls playsinline preload="metadata"></video>
+        <h3>Common kitchen</h3>
+        <p>A 25-second pan of a shared kitchen.</p>
+        <a class="btn ghost" href="/host/sample-kitchen.mp4" download="roomsure-sample-kitchen.mp4">Download kitchen video</a>
       </div>
-      <div>
-        <p>This 25-second kitchen pan is the real footage behind our sample scan.
-        Download it, then upload it in step 2 to watch the 3D room get generated.</p>
-        <a class="btn ghost" href="/host/sample-kitchen.mp4" download="roomsure-sample-kitchen.mp4">Download the sample video</a>
-        <p class="hint">Filming your own: one slow pan from a corner, 20–30 seconds,
-        normal room lights on. Keep windows in frame — they anchor the scale.</p>
+      <div class="sample">
+        <video src="/host/sample-bathroom.mp4" controls playsinline preload="metadata"></video>
+        <h3>Restroom</h3>
+        <p>A quick pan of a small restroom.</p>
+        <a class="btn ghost" href="/host/sample-bathroom.mp4" download="roomsure-sample-bathroom.mp4">Download bathroom video</a>
       </div>
     </div>
+    <p class="hint">Download a sample, then upload it in step 2 to watch the 3D room appear.
+    Filming your own: one slow pan from a corner, 20–30 seconds, lights on.</p>
   </div>
 
   <div class="card" id="uploadCard">
@@ -128,31 +99,27 @@
       <p class="tiny" style="margin:0">MP4 or MOV · a single slow pan works best</p>
     </div>
     <input type="file" id="file" accept="video/*">
-    <p class="tiny" style="margin-bottom:0">Demo privacy: your video is read locally in your
-    browser and never uploaded or stored.</p>
+    <p class="tiny" style="margin-bottom:0">New videos are scanned on this machine and
+    usually take a few minutes for a 25-second clip.</p>
   </div>
 
-  <div class="card" id="gen">
+  <div class="card" id="genCard">
     <div class="step"><span class="n">3</span><h2>Generating your room…</h2></div>
+    <p class="state" id="state">Starting…</p>
     <div class="bar"><i id="barfill"></i></div>
-    <p class="tiny" id="filemeta"></p>
-    <div id="stages">
-      <div class="stage"><span class="dot"></span>Extracting frames from <span id="fname">your video</span></div>
-      <div class="stage"><span class="dot"></span>Measuring the architecture — walls, windows, doors</div>
-      <div class="stage"><span class="dot"></span>Cataloguing furniture and appliances</div>
-      <div class="stage"><span class="dot"></span>Sampling materials and colors</div>
-      <div class="stage"><span class="dot"></span>Reading the light</div>
-      <div class="stage"><span class="dot"></span>Assembling the walkable room</div>
-    </div>
+    <p id="eta"></p>
   </div>
 
-  <div class="card" id="result">
+  <div class="card" id="resultCard">
     <div class="step"><span class="n">✓</span><h2>Your room is ready — walk through it</h2></div>
     <div class="frame-wrap">
       <iframe id="viewer" title="Walkable 3D room" allow="pointer-lock; fullscreen"></iframe>
     </div>
-    <p class="hint">Click inside to capture the mouse · WASD to move · Shift to run · Esc frees the cursor.
-    <a href="/scans/room3d/index.html" target="_blank" rel="noopener">Open full screen ↗</a></p>
+    <div class="row">
+      <a class="btn" id="openFull" target="_blank" rel="noopener">Open full screen</a>
+      <span class="tiny">Click the room to capture the mouse · <strong>WASD</strong> to walk ·
+      <strong>Shift</strong> to run · <strong>Esc</strong> frees the cursor.</span>
+    </div>
   </div>
 </main>
 
@@ -162,55 +129,95 @@ A 3D scan is an inspection aid, not proof of condition.</footer>
 <script>
   const drop = document.getElementById('drop');
   const file = document.getElementById('file');
-  const gen = document.getElementById('gen');
-  const result = document.getElementById('result');
-  const stages = [...document.querySelectorAll('.stage')];
-  const bar = document.getElementById('barfill');
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const genCard = document.getElementById('genCard');
+  const resultCard = document.getElementById('resultCard');
+  const stateEl = document.getElementById('state');
+  const etaEl = document.getElementById('eta');
+  const barEl = document.getElementById('barfill');
+  // Real scans run on the local scan service; same origin when the site is
+  // served by it, otherwise its default local address.
+  const SCAN_API = location.port === '8140' ? '' : 'http://127.0.0.1:8140';
 
   drop.addEventListener('click', () => file.click());
   drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') file.click(); });
-  ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, (e) => {
-    e.preventDefault(); drop.classList.add('over');
-  }));
-  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, (e) => {
-    e.preventDefault(); drop.classList.remove('over');
-  }));
-  drop.addEventListener('drop', (e) => {
-    const f = e.dataTransfer?.files?.[0];
-    if (f) start(f);
-  });
+  ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => { const f = e.dataTransfer?.files?.[0]; if (f) start(f); });
   file.addEventListener('change', () => { if (file.files[0]) start(file.files[0]); });
 
+  function fmtEta(s) {
+    if (s <= 3) return 'wrapping up…';
+    if (s < 60) return `about ${Math.max(5, Math.round(s / 5) * 5)} seconds left`;
+    let m = Math.floor(s / 60), r = Math.round((s % 60) / 10) * 10;
+    if (r === 60) { m += 1; r = 0; }
+    return `about ${m}m ${String(r).padStart(2, '0')}s left`;
+  }
+
+  function showGen() {
+    genCard.style.display = 'block';
+    resultCard.style.display = 'none';
+    stateEl.classList.remove('err');
+    stateEl.textContent = 'Reading your video…';
+    etaEl.textContent = '';
+    barEl.style.width = '2%';
+    genCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function showRoom(roomId) {
+    const url = '/scans/room3d/index.html?room=' + encodeURIComponent(roomId);
+    document.getElementById('viewer').src = url;
+    document.getElementById('openFull').href = url;
+    resultCard.style.display = 'block';
+    resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   async function start(f) {
-    if (!f.type.startsWith('video/') && !/\.(mov|mp4|m4v|webm)$/i.test(f.name)) {
-      drop.querySelector('p').innerHTML = '<strong>That doesn’t look like a video</strong> — try an MP4 or MOV';
+    const name = (f.name || '').toLowerCase();
+    showGen();
+    // The two sample videos map straight to their pre-built scans.
+    const canned = name.includes('kitchen') ? 'kitchen'
+                 : name.includes('bathroom') ? 'bathroom-v2' : null;
+    if (canned) {
+      try { await f.arrayBuffer(); } catch (e) { /* demo read */ }
+      const stages = ['Reading your video…', 'Measuring the room…', 'Building your 3D room…'];
+      for (let i = 0; i < stages.length; i++) {
+        stateEl.textContent = stages[i];
+        barEl.style.width = `${Math.round(((i + 1) / (stages.length + 0.3)) * 100)}%`;
+        await new Promise(r => setTimeout(r, 900));
+      }
+      barEl.style.width = '100%';
+      stateEl.textContent = 'Done';
+      showRoom(canned);
       return;
     }
-    document.getElementById('uploadCard').style.opacity = 0.55;
-    drop.style.pointerEvents = 'none';
-    gen.style.display = 'block';
-    gen.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-    document.getElementById('fname').textContent = f.name;
-    document.getElementById('filemeta').textContent =
-      `${f.name} · ${(f.size / 1048576).toFixed(1)} MB — read locally, never uploaded`;
-    // actually read the file locally so the first step is real
-    try { await f.arrayBuffer(); } catch (e) { /* fine for the demo */ }
-
-    const stepMs = reduce ? 60 : 1150;
-    for (let i = 0; i < stages.length; i++) {
-      stages[i].classList.add('active');
-      bar.style.width = `${Math.round(((i + 0.6) / stages.length) * 100)}%`;
-      await new Promise(r => setTimeout(r, stepMs + Math.random() * 450));
-      stages[i].classList.remove('active');
-      stages[i].classList.add('done');
+    // Anything else: a real scan via the local service.
+    let id;
+    try {
+      const res = await fetch(SCAN_API + '/api/scan', {
+        method: 'POST', body: f,
+        headers: { 'x-filename': f.name, 'x-mock': '0' },
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      ({ id } = await res.json());
+    } catch (e) {
+      stateEl.classList.add('err');
+      stateEl.textContent = 'Live scanning is not available right now — try one of the sample videos above.';
+      barEl.style.width = '0%';
+      return;
     }
-    bar.style.width = '100%';
-
-    // reveal the walkable room (the viewer plays its own assembly animation)
-    document.getElementById('viewer').src = '/scans/room3d/index.html';
-    result.style.display = 'block';
-    result.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    const t = setInterval(async () => {
+      let s;
+      try { s = await (await fetch(SCAN_API + '/api/scan/' + id)).json(); }
+      catch { return; }
+      stateEl.textContent = s.state === 'error'
+        ? 'Something went wrong with that clip — try a different video.'
+        : (s.stage || 'Working…');
+      stateEl.classList.toggle('err', s.state === 'error');
+      barEl.style.width = `${Math.max(2, Math.round((s.progress || 0) * 100))}%`;
+      etaEl.textContent = (s.state === 'done' || s.state === 'error') ? '' : fmtEta(s.etaSeconds ?? 0);
+      if (s.state === 'done') { clearInterval(t); showRoom(s.roomId); }
+      if (s.state === 'error') clearInterval(t);
+    }, 1500);
   }
 </script>
 </body>
