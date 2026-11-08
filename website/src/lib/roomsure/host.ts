@@ -5,6 +5,7 @@
 import { useSyncExternalStore } from "react";
 import { checkListingRules } from "./check";
 import { FACILITY_KEYS } from "./rankListings";
+import { SAMPLE_TOUR_PATH } from "./scans";
 import type { FairPrice, ListingDetails, RoomListing, TrustInfo } from "./types";
 
 export const HOST_STORAGE_KEY = "roomsure-host-v1";
@@ -172,7 +173,7 @@ export function publishBlockers(s: Pick<HostState, "profile" | "checks" | "right
   return blockers;
 }
 
-export const SAMPLE_TOUR_PATH = "/scans/room3d/index.html";
+export { SAMPLE_TOUR_PATH };
 
 /** Cover image for a room listed with a 3D tour but no photos, so the card never shows a broken image. */
 export function placeholderPhoto(neighborhood: string): string {

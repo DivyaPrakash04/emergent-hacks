@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { Box, X } from "lucide-react";
-
-/** Only absolute URLs are real scans; the demo's local paths show the placeholder. */
-const isRealScan = (u?: string) => !!u && /^https?:\/\//.test(u);
+import { resolveScanUrl } from "@/lib/roomsure/scans";
 
 export function TourOverlay({ open, onClose, scanUrl, title }: { open: boolean; onClose: () => void; scanUrl?: string | undefined; title: string }) {
   const [failed, setFailed] = useState(false);
@@ -14,18 +12,24 @@ export function TourOverlay({ open, onClose, scanUrl, title }: { open: boolean; 
     return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
   }, [open, onClose]);
   if (!open) return null;
-  const showFrame = isRealScan(scanUrl) && !failed;
+  // Same-origin paths (the sample scan in public/scans) load from this site; absolute URLs as given.
+  const src = resolveScanUrl(scanUrl, typeof window === "undefined" ? "" : window.location.origin);
+  const showFrame = !!src && !failed;
 
   return (
     <div role="dialog" aria-modal="true" aria-label={`3D tour of ${title}`} className="fixed inset-0 z-[60] flex flex-col bg-foreground">
       <div className="flex items-center justify-between p-3">
-        <p className="font-semibold text-background">{title}</p>
+        <div>
+          <p className="font-semibold text-background">{title}</p>
+          {/* Inside the scan, Esc only frees the mouse (the scan keeps the keyboard), so point to the close button. */}
+          {showFrame && <p className="text-[13px] text-background/70">Esc frees the mouse · close with ×</p>}
+        </div>
         <button type="button" onClick={onClose} aria-label="Close 3D tour" autoFocus
           className="grid size-11 place-items-center rounded-full bg-background/15 text-background"><X className="size-5" /></button>
       </div>
       <div className="relative flex-1">
         {showFrame ? (
-          <iframe src={scanUrl} title={`3D scan of ${title}`} onError={() => setFailed(true)} className="absolute inset-0 h-full w-full border-0" allow="fullscreen; xr-spatial-tracking" />
+          <iframe src={src} title={`3D scan of ${title}`} onError={() => setFailed(true)} className="absolute inset-0 h-full w-full border-0" allow="fullscreen; xr-spatial-tracking" />
         ) : (
           <div className="absolute inset-0 grid place-items-center p-6 text-center text-background">
             <div className="space-y-3">
