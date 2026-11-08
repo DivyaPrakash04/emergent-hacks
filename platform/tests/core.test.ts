@@ -12,14 +12,14 @@ const { passwordHash, passwordMatches, verified, originGuard, rateLimit } =
   await import("../lib/auth");
 const { sendCode, verifyCode, stripe } = await import("../lib/providers");
 const { processEvent } = await import("../lib/webhook");
-const seed = (id: string, role = "seeker") => {
-  db.prepare(
+const seed = async (id: string, role = "seeker") => {
+  await db.prepare(
     "INSERT INTO users(id,name,email,password,role,created_at) VALUES(?,?,?,?,?,?)",
   ).run(id, "Maya", `${id}@example.com`, "unused", role, Date.now());
-  return userById(id)!;
+  return (await userById(id))!;
 };
-after(() => {
-  db.close();
+after(async () => {
+  await db.close();
   rmSync(folder, { recursive: true, force: true });
 });
 test("passwords use salted scrypt, and reject incorrect credentials", async () => {
@@ -30,23 +30,23 @@ test("passwords use salted scrypt, and reject incorrect credentials", async () =
   assert(!(await passwordMatches("incorrect password", a)));
 });
 test("email challenges expire, lock after five failures, and are single use", async () => {
-  const u = seed("email");
+  const u = await seed("email");
   const code = await sendCode(u);
   assert(code);
-  for (let i = 0; i < 5; i++) assert.throws(() => verifyCode(u, "000000"));
-  assert.throws(() => verifyCode(u, code));
-  db.prepare("DELETE FROM codes WHERE user_id=?").run(u.id);
+  for (let i = 0; i < 5; i++) await assert.rejects(verifyCode(u, "000000"));
+  await assert.rejects(verifyCode(u, code));
+  await db.prepare("DELETE FROM codes WHERE user_id=?").run(u.id);
   const next = await sendCode(u);
-  db.prepare("UPDATE codes SET expires=0 WHERE user_id=?").run(u.id);
-  assert.throws(() => verifyCode(u, next!));
-  db.prepare("DELETE FROM codes WHERE user_id=?").run(u.id);
+  await db.prepare("UPDATE codes SET expires=0 WHERE user_id=?").run(u.id);
+  await assert.rejects(verifyCode(u, next!));
+  await db.prepare("DELETE FROM codes WHERE user_id=?").run(u.id);
   const final = await sendCode(u);
-  verifyCode(u, final!);
-  assert.equal(userById(u.id)!.email_verified, 1);
-  assert.throws(() => verifyCode(u, final!));
+  await verifyCode(u, final!);
+  assert.equal((await userById(u.id))!.email_verified, 1);
+  await assert.rejects(verifyCode(u, final!));
 });
-test("verification requires every check and host consent", () => {
-  const u = seed("host", "host");
+test("verification requires every check and host consent", async () => {
+  const u = await seed("host", "host");
   assert(!verified(u));
   u.email_verified = 1;
   u.identity_status = "verified";
@@ -57,7 +57,7 @@ test("verification requires every check and host consent", () => {
   u.identity_status = "needs_input";
   assert(!verified(u));
 });
-test("origin enforcement and persistent rate limit reject bad requests", () => {
+test("origin enforcement and persistent rate limit reject bad requests", async () => {
   assert.throws(() =>
     originGuard(
       new Request("http://localhost:3000", {
@@ -70,18 +70,18 @@ test("origin enforcement and persistent rate limit reject bad requests", () => {
       headers: { origin: "http://localhost:3000" },
     }),
   );
-  rateLimit("sample", 2);
-  rateLimit("sample", 2);
-  assert.throws(() => rateLimit("sample", 2));
+  await rateLimit("sample", 2);
+  await rateLimit("sample", 2);
+  await assert.rejects(rateLimit("sample", 2));
 });
-test("one reservation cannot be charged twice", () => {
-  const u = seed("payment");
-  db.prepare("INSERT INTO payments(id,user_id,amount,status,provider_id,created_at) VALUES(?,?,95000,'paid',NULL,?)").run(
+test("one reservation cannot be charged twice", async () => {
+  const u = await seed("payment");
+  await db.prepare("INSERT INTO payments(id,user_id,amount,status,provider_id,created_at) VALUES(?,?,95000,'paid',NULL,?)").run(
     "p1",
     u.id,
     Date.now(),
   );
-  assert.throws(() =>
+  await assert.rejects(
     db
       .prepare("INSERT INTO payments(id,user_id,amount,status,provider_id,created_at) VALUES(?,?,95000,'pending',NULL,?)")
       .run("p2", u.id, Date.now()),
@@ -107,12 +107,12 @@ test("signed webhooks reject tampering and live keys", () => {
   delete process.env.STRIPE_SECRET_KEY;
 });
 test("payment webhooks use canonical provider state, enforce ownership, and deduplicate", async () => {
-  const u = seed("webhook");
-  db.prepare("UPDATE users SET customer_id=? WHERE id=?").run(
+  const u = await seed("webhook");
+  await db.prepare("UPDATE users SET customer_id=? WHERE id=?").run(
     "cus_owner",
     u.id,
   );
-  db.prepare("INSERT INTO payments(id,user_id,amount,status,provider_id,created_at) VALUES(?,?,95000,'pending',?,?)").run(
+  await db.prepare("INSERT INTO payments(id,user_id,amount,status,provider_id,created_at) VALUES(?,?,95000,'pending',?,?)").run(
     "webhook-payment",
     u.id,
     "cs_owned",
@@ -140,7 +140,7 @@ test("payment webhooks use canonical provider state, enforce ownership, and dedu
   await processEvent(event, client);
   assert.equal(
     (
-      db
+      await db
         .prepare("SELECT status FROM payments WHERE id=?")
         .get("webhook-payment") as { status: string }
     ).status,
@@ -158,7 +158,7 @@ test("payment webhooks use canonical provider state, enforce ownership, and dedu
   await processEvent({ ...event, id: "evt_confirmed" }, client);
   assert.equal(
     (
-      db
+      await db
         .prepare("SELECT status FROM payments WHERE id=?")
         .get("webhook-payment") as { status: string }
     ).status,
@@ -167,7 +167,7 @@ test("payment webhooks use canonical provider state, enforce ownership, and dedu
   await processEvent({ ...event, id: "evt_confirmed" }, client);
   assert.equal(
     (
-      db
+      await db
         .prepare(
           "SELECT count(*) AS count FROM activity WHERE user_id=? AND message='Test reservation payment received'",
         )
@@ -182,25 +182,25 @@ test("payment webhooks use canonical provider state, enforce ownership, and dedu
 
 test("demo records cannot cross into Stripe mode", async () => {
   const { providerMode } = await import("../lib/auth");
-  assert.equal(providerMode(), "demo");
+  assert.equal(await providerMode(), "demo");
   process.env.PROVIDER_MODE = "stripe";
-  assert.throws(() => providerMode(), /another provider mode/);
+  await assert.rejects(providerMode(), /another provider mode/);
   process.env.PROVIDER_MODE = "demo";
 });
 
 test("card and identity webhooks derive completion from retrieved provider objects", async () => {
-  const u = seed("checks");
-  db.prepare("UPDATE users SET customer_id=? WHERE id=?").run(
+  const u = await seed("checks");
+  await db.prepare("UPDATE users SET customer_id=? WHERE id=?").run(
     "cus_checks",
     u.id,
   );
-  db.prepare("INSERT INTO flows VALUES(?,?,'identity',?,'pending',?)").run(
+  await db.prepare("INSERT INTO flows VALUES(?,?,'identity',?,'pending',?)").run(
     "identity-flow",
     u.id,
     "vs_test",
     Date.now(),
   );
-  db.prepare("INSERT INTO flows VALUES(?,?,'card',?,'pending',?)").run(
+  await db.prepare("INSERT INTO flows VALUES(?,?,'card',?,'pending',?)").run(
     "card-flow",
     u.id,
     "cs_setup",
@@ -246,7 +246,7 @@ test("card and identity webhooks derive completion from retrieved provider objec
     } as Stripe.Event,
     client,
   );
-  assert.equal(userById(u.id)!.identity_status, "verified");
-  assert.equal(userById(u.id)!.card_status, "verified");
-  assert.equal(userById(u.id)!.card_last4, "1234");
+  assert.equal((await userById(u.id))!.identity_status, "verified");
+  assert.equal((await userById(u.id))!.card_status, "verified");
+  assert.equal((await userById(u.id))!.card_last4, "1234");
 });

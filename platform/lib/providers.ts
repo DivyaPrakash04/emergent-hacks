@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { randomInt, randomUUID } from "node:crypto";
-import { db, log, type User } from "./db";
+import { db, transaction, type User } from "./db";
 import { appUrl, hash, HttpError, providerMode } from "./auth";
 export function stripe() {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -12,13 +12,13 @@ export function stripe() {
   return new Stripe(key);
 }
 export async function sendCode(user: User) {
-  const existing = db
+  const existing = (await db
     .prepare("SELECT sent_at FROM codes WHERE user_id=?")
-    .get(user.id) as { sent_at: number } | undefined;
+    .get(user.id)) as { sent_at: number } | undefined;
   if (existing && existing.sent_at > Date.now() - 60000)
     throw new HttpError(429, "Wait a minute before requesting another code.");
   const code = String(randomInt(100000, 1000000));
-  if (providerMode() === "stripe") {
+  if ((await providerMode()) === "stripe") {
     if (!process.env.RESEND_API_KEY)
       throw new HttpError(503, "Email delivery is not configured.");
     const result = await fetch("https://api.resend.com/emails", {
@@ -40,24 +40,31 @@ export async function sendCode(user: User) {
         "Could not deliver the email. Please try again.",
       );
   }
-  db.prepare(
+  await db.prepare(
     "INSERT INTO codes(user_id,hash,expires,attempts,sent_at) VALUES(?,?,?,0,?) ON CONFLICT(user_id) DO UPDATE SET hash=excluded.hash,expires=excluded.expires,attempts=0,sent_at=excluded.sent_at",
   ).run(user.id, hash(`${user.id}:${code}`), Date.now() + 600000, Date.now());
-  return providerMode() === "demo" ? code : undefined;
+  return (await providerMode()) === "demo" ? code : undefined;
 }
-export function verifyCode(user: User, code: string) {
-  const row = db.prepare("SELECT * FROM codes WHERE user_id=?").get(user.id) as
-    { hash: string; expires: number; attempts: number } | undefined;
-  if (!row || row.expires < Date.now() || row.attempts >= 5)
+export async function verifyCode(user: User, code: string) {
+  const outcome = await transaction(async (tx) => {
+    const row = (await tx.prepare("SELECT * FROM codes WHERE user_id=?").get(user.id)) as
+      { hash: string; expires: number; attempts: number } | undefined;
+    if (!row || row.expires < Date.now() || row.attempts >= 5) return "expired";
+    await tx.prepare("UPDATE codes SET attempts=attempts+1 WHERE user_id=?").run(
+      user.id,
+    );
+    if (row.hash !== hash(`${user.id}:${code}`)) return "incorrect";
+    await tx.prepare("UPDATE users SET email_verified=1 WHERE id=?").run(user.id);
+    await tx.prepare("DELETE FROM codes WHERE user_id=?").run(user.id);
+    await tx.prepare(
+      "INSERT INTO activity(user_id,message,created_at) VALUES(?,?,?)",
+    ).run(user.id, "Email address verified", Date.now());
+    return "verified";
+  });
+  if (outcome === "expired")
     throw new HttpError(400, "Code expired or locked. Request a new code.");
-  db.prepare("UPDATE codes SET attempts=attempts+1 WHERE user_id=?").run(
-    user.id,
-  );
-  if (row.hash !== hash(`${user.id}:${code}`))
+  if (outcome === "incorrect")
     throw new HttpError(400, "That code is incorrect.");
-  db.prepare("UPDATE users SET email_verified=1 WHERE id=?").run(user.id);
-  db.prepare("DELETE FROM codes WHERE user_id=?").run(user.id);
-  log(user.id, "Email address verified");
 }
 export async function customer(user: User) {
   if (user.customer_id) return user.customer_id;
@@ -65,7 +72,7 @@ export async function customer(user: User) {
     { email: user.email, name: user.name, metadata: { userId: user.id } },
     { idempotencyKey: `customer:${user.id}` },
   );
-  db.prepare("UPDATE users SET customer_id=? WHERE id=?").run(
+  await db.prepare("UPDATE users SET customer_id=? WHERE id=?").run(
     value.id,
     user.id,
   );
@@ -73,14 +80,14 @@ export async function customer(user: User) {
 }
 export async function startIdentity(user: User) {
   const client = stripe();
-  const previous = db
+  const previous = (await db
     .prepare(
       "SELECT * FROM flows WHERE user_id=? AND kind='identity' AND status='pending' ORDER BY created_at DESC LIMIT 1",
     )
-    .get(user.id) as { id: string; provider_id: string | null } | undefined;
+    .get(user.id)) as { id: string; provider_id: string | null } | undefined;
   const id = previous?.id || randomUUID();
   if (!previous)
-    db.prepare(
+    await db.prepare(
       "INSERT INTO flows(id,user_id,kind,created_at) VALUES(?,?,'identity',?)",
     ).run(id, user.id, Date.now());
   const session = previous?.provider_id
@@ -95,17 +102,17 @@ export async function startIdentity(user: User) {
         },
         { idempotencyKey: id },
       );
-  db.prepare("UPDATE flows SET provider_id=? WHERE id=?").run(session.id, id);
+  await db.prepare("UPDATE flows SET provider_id=? WHERE id=?").run(session.id, id);
   if (session.status === "verified")
     throw new HttpError(
       409,
       "Verification is being confirmed. Refresh in a moment.",
     );
   if (session.status === "canceled") {
-    db.prepare("UPDATE flows SET status='canceled' WHERE id=?").run(id);
+    await db.prepare("UPDATE flows SET status='canceled' WHERE id=?").run(id);
     throw new HttpError(409, "Previous verification canceled. Please retry.");
   }
-  db.prepare("UPDATE users SET identity_status='pending' WHERE id=?").run(
+  await db.prepare("UPDATE users SET identity_status='pending' WHERE id=?").run(
     user.id,
   );
   return session.url;
@@ -118,24 +125,24 @@ export async function startCheckout(
   const client = stripe();
   const customerId = await customer(user);
   const table = kind === "card" ? "flows" : "payments";
-  const prior = db
+  const prior = (await db
     .prepare(
       kind === "card"
         ? "SELECT * FROM flows WHERE user_id=? AND kind='card' AND status='pending' ORDER BY created_at DESC LIMIT 1"
         : "SELECT * FROM payments WHERE user_id=? AND status IN ('pending','paid') LIMIT 1",
     )
-    .get(user.id) as
+    .get(user.id)) as
     { id: string; provider_id: string | null; status: string } | undefined;
   if (prior?.status === "paid")
     throw new HttpError(409, "This reservation has already been paid.");
   const id = prior?.id || randomUUID();
   if (!prior) {
     if (kind === "card")
-      db.prepare(
+      await db.prepare(
         "INSERT INTO flows(id,user_id,kind,created_at) VALUES(?,?,'card',?)",
       ).run(id, user.id, Date.now());
     else
-      db.prepare(
+      await db.prepare(
         "INSERT INTO payments(id,user_id,amount,status,created_at,listing_id) VALUES(?,?,?,'pending',?,?)",
       ).run(id, user.id, room.amountCents, Date.now(), room.listingId);
   }
@@ -169,12 +176,12 @@ export async function startCheckout(
         },
         { idempotencyKey: id },
       );
-  db.prepare(`UPDATE ${table} SET provider_id=? WHERE id=?`).run(
+  await db.prepare(`UPDATE ${table} SET provider_id=? WHERE id=?`).run(
     session.id,
     id,
   );
   if (session.status === "expired") {
-    db.prepare(`UPDATE ${table} SET status='expired' WHERE id=?`).run(id);
+    await db.prepare(`UPDATE ${table} SET status='expired' WHERE id=?`).run(id);
     throw new HttpError(409, "Checkout expired. Please try again.");
   }
   if (session.status === "complete")

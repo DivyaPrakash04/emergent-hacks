@@ -23,6 +23,28 @@ Open http://localhost:3000. Create an account with a sample email and a unique p
 
 Accounts and sessions are real local application records in both modes. Only email delivery, identity/card checks and payment outcomes are simulated in demo mode. Never use an important or reused password for testing.
 
+## Database and Vercel deployment
+
+Local development uses SQLite in `.data/roomsure.sqlite`. When both `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set, the same async database layer uses Turso. A partial Turso configuration is rejected. `TURSO_REQUIRED=true` makes the app fail closed if deployed without Turso credentials. The Turso client uses HTTP and works in Vercel serverless functions; database credentials stay on the server.
+
+To deploy this backend as a separate Vercel project:
+
+1. Create a Turso database and an auth token in the Turso dashboard.
+2. Import this GitHub repository as a new Vercel project and set its root directory to `platform/`. Use Node.js 24 or newer.
+3. Set these server-side Vercel environment variables:
+
+   ```dotenv
+   APP_URL=https://<your-frontend-domain>
+   PROVIDER_MODE=demo
+   TURSO_DATABASE_URL=<your-turso-database-url>
+   TURSO_AUTH_TOKEN=<your-turso-auth-token>
+   TURSO_REQUIRED=true
+   ```
+
+4. Deploy the backend, then add a same-origin `/api/*` rewrite in the frontend Vercel project to the backend's Vercel URL. Set `APP_URL` to the frontend's public origin; the backend checks request origins and issues session cookies.
+
+The deployment creates the schema on first request. It does not import an existing local `.data` database. Keep `PROVIDER_MODE=demo`; do not use real identity documents or payment details for this hackathon MVP. The frontend remains a separate Vercel project and can continue to use its local demo fallback until the `/api` rewrite is configured.
+
 ## Stripe-backed test mode
 
 Set the following in `.env.local` and restart:
@@ -89,6 +111,6 @@ All JSON POST routes except `/api/webhook` require an `Origin` matching `APP_URL
 
 This implementation is a test-mode MVP, not a live rental marketplace. It includes one fixed sample reservation per seeker. It does not implement room inventory, host payouts, Stripe Connect, escrow, refunds/disputes, production identity retention workflows, MFA, account recovery or verified ownership records.
 
-Deploy the SQLite app as a **single Node process with persistent writable disk**, with HTTPS and the matching `APP_URL`. Do not deploy this database unchanged to ephemeral/serverless storage such as a default Vercel function. Use a managed database and shared rate limiter before scaling to multiple instances. Set `PROVIDER_MODE` explicitly in production; an unset value fails closed. The deployment must exclude demo records from any future live payment implementation.
+For the Vercel demo deployment, configure Turso and set `TURSO_REQUIRED=true`; the local SQLite fallback is for development only and must not be relied on for persistent Vercel data. Use HTTPS and set `APP_URL` to the frontend origin. This is still a test-mode MVP, not a live rental marketplace. Before handling real users or scaling beyond the hackathon demo, add a shared rate limiter and review the identity, payment, and data-retention flows. Set `PROVIDER_MODE` explicitly in production; an unset value fails closed. The deployment must exclude demo records from any future live payment implementation.
 
 Official integration references: [Stripe Identity](https://docs.stripe.com/identity/verify-identity-documents), [Stripe card setup](https://docs.stripe.com/payments/checkout/save-and-reuse), [Stripe webhooks](https://docs.stripe.com/webhooks), [Resend email API](https://resend.com/docs/api-reference/emails/send-email).

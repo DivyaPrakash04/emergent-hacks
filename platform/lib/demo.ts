@@ -27,18 +27,18 @@ let ensured: Promise<void> | null = null;
  * passwords are random and never shown: demo accounts sign in only through
  * POST /api/demo/login.
  */
-export function ensureDemoAccounts(): Promise<void> {
-  if (providerMode() !== "demo") return Promise.resolve();
+export async function ensureDemoAccounts(): Promise<void> {
+  if ((await providerMode()) !== "demo") return;
   ensured ??= (async () => {
     for (const a of DEMO_ACCOUNTS) {
-      const exists = db.prepare("SELECT id FROM users WHERE id=?").get(a.id);
+      const exists = await db.prepare("SELECT id FROM users WHERE id=?").get(a.id);
       if (!exists) {
         const password = await passwordHash(randomBytes(32).toString("hex"));
-        db.prepare(
+        await db.prepare(
           "INSERT OR IGNORE INTO users(id,name,email,password,role,created_at) VALUES(?,?,?,?,?,?)",
         ).run(a.id, a.name, a.email, password, a.role, Date.now());
       }
-      db.prepare(
+      await db.prepare(
         "UPDATE users SET email_verified=1, identity_status='verified', card_status='verified', card_last4='4242', consent=? WHERE id=?",
       ).run(a.consent, a.id);
     }
@@ -46,7 +46,7 @@ export function ensureDemoAccounts(): Promise<void> {
     ensured = null; // retry on the next request
     throw error;
   });
-  return ensured;
+  await ensured;
 }
 
 export interface Reservation {

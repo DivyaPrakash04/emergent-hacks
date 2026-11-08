@@ -57,8 +57,8 @@ async function body(request: Request) {
     throw new HttpError(400, "Invalid request body.");
   }
 }
-function snapshot(user: User | null) {
-  const mode = providerMode();
+async function snapshot(user: User | null) {
+  const mode = await providerMode();
   if (!user) return { user: null, mode };
   return {
     mode,
@@ -75,12 +75,12 @@ function snapshot(user: User | null) {
       verified: verified(user),
       createdAt: user.created_at,
     },
-    payments: db
+    payments: await db
       .prepare(
         "SELECT id,amount,status,created_at,listing_id FROM payments WHERE user_id=? ORDER BY created_at DESC",
       )
       .all(user.id),
-    activity: db
+    activity: await db
       .prepare(
         "SELECT id,message,created_at FROM activity WHERE user_id=? ORDER BY id DESC LIMIT 12",
       )
@@ -92,15 +92,15 @@ async function handle(
   { params }: { params: Promise<{ path: string[] }> },
 ) {
   try {
-    providerMode();
+    await providerMode();
     await ensureDemoAccounts();
     const path = (await params).path.join("/");
     if (request.method === "GET") {
-      if (path === "me") return json(snapshot(await currentUser()));
+      if (path === "me") return json(await snapshot(await currentUser()));
       throw new HttpError(404, "Not found.");
     }
     if (path === "webhook") {
-      if (providerMode() !== "stripe" || !process.env.STRIPE_WEBHOOK_SECRET)
+      if ((await providerMode()) !== "stripe" || !process.env.STRIPE_WEBHOOK_SECRET)
         throw new HttpError(503, "Webhook is not configured.");
       const raw = await request.text();
       let event;
@@ -120,11 +120,11 @@ async function handle(
     const data = await body(request);
     if (path === "auth/signup") {
       const input = signup.parse(data);
-      rateLimit(`signup:${input.email}`, 5);
+      await rateLimit(`signup:${input.email}`, 5);
       const id = randomUUID();
       const encoded = await passwordHash(input.password);
       try {
-        db.prepare(
+        await db.prepare(
           "INSERT INTO users(id,name,email,password,role,created_at) VALUES(?,?,?,?,?,?)",
         ).run(id, input.name, input.email, encoded, input.role, Date.now());
       } catch (error) {
@@ -136,15 +136,15 @@ async function handle(
         throw error;
       }
       await createSession(id);
-      log(id, "Account created");
+      await log(id, "Account created");
       return json({ ok: true });
     }
     if (path === "auth/login") {
       const input = credentials.parse(data);
-      rateLimit(`login:${input.email}`, 10);
-      const user = db
+      await rateLimit(`login:${input.email}`, 10);
+      const user = (await db
         .prepare("SELECT * FROM users WHERE email=?")
-        .get(input.email) as User | undefined;
+        .get(input.email)) as User | undefined;
       // Always perform password derivation, including when the account is missing.
       const valid = await passwordMatches(
         input.password,
@@ -153,14 +153,14 @@ async function handle(
       if (!user || !valid)
         throw new HttpError(401, "Email or password is incorrect.");
       await createSession(user.id);
-      log(user.id, "Signed in");
+      await log(user.id, "Signed in");
       return json({ ok: true });
     }
     if (path === "demo/login") {
       // One-click "Continue as Maya" for the live demo. Demo mode only.
-      if (providerMode() !== "demo") throw new HttpError(404, "Not found.");
+      if ((await providerMode()) !== "demo") throw new HttpError(404, "Not found.");
       await createSession(DEMO_SEEKER_ID);
-      log(DEMO_SEEKER_ID, "Signed in with the demo login");
+      await log(DEMO_SEEKER_ID, "Signed in with the demo login");
       return json({ ok: true });
     }
     if (path === "intake" || path === "check") {
@@ -168,7 +168,7 @@ async function handle(
       // offline rules on any failure, and says which path ran (source).
       const { text } = z.object({ text: z.string().trim().min(1, "Type something first.").max(5000) }).parse(data);
       const client = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-      rateLimit(`ai:${client}`, 60);
+      await rateLimit(`ai:${client}`, 60);
       if (path === "intake") {
         const { result, call } = await readIntake(text);
         return json({ ...result, fallback: call.failure ?? null });
@@ -177,15 +177,15 @@ async function handle(
       return json({ ...result, fallback: call.failure ?? null });
     }
     const user = await requireUser();
-    rateLimit(`action:${user.id}`, 100);
+    await rateLimit(`action:${user.id}`, 100);
     if (path === "demo/reset") {
       // Clears this account's simulated reservations so the demo can run again. Demo mode only.
-      if (providerMode() !== "demo") throw new HttpError(404, "Not found.");
-      transaction(() => {
-        db.prepare("DELETE FROM payments WHERE user_id=?").run(user.id);
-        db.prepare("DELETE FROM activity WHERE user_id=?").run(user.id);
+      if ((await providerMode()) !== "demo") throw new HttpError(404, "Not found.");
+      await transaction(async (tx) => {
+        await tx.prepare("DELETE FROM payments WHERE user_id=?").run(user.id);
+        await tx.prepare("DELETE FROM activity WHERE user_id=?").run(user.id);
       });
-      log(user.id, "Demo reset");
+      await log(user.id, "Demo reset");
       return json({ ok: true });
     }
     if (path === "auth/logout") {
@@ -200,7 +200,7 @@ async function handle(
     }
     if (path === "email/verify") {
       const input = z.object({ code: z.string().regex(/^\d{6}$/) }).parse(data);
-      verifyCode(user, input.code);
+      await verifyCode(user, input.code);
       return json({ ok: true });
     }
     if (path === "security/password") {
@@ -210,27 +210,27 @@ async function handle(
           newPassword: z.string().min(12).max(128),
         })
         .parse(data);
-      rateLimit(`password:${user.id}`, 5);
+      await rateLimit(`password:${user.id}`, 5);
       if (!(await passwordMatches(input.currentPassword, user.password)))
         throw new HttpError(400, "Current password is incorrect.");
-      db.prepare("UPDATE users SET password=? WHERE id=?").run(
+      await db.prepare("UPDATE users SET password=? WHERE id=?").run(
         await passwordHash(input.newPassword),
         user.id,
       );
-      db.prepare("DELETE FROM sessions WHERE user_id=?").run(user.id);
+      await db.prepare("DELETE FROM sessions WHERE user_id=?").run(user.id);
       await createSession(user.id);
-      log(user.id, "Password changed; other sessions signed out");
+      await log(user.id, "Password changed; other sessions signed out");
       return json({ ok: true });
     }
     if (path === "host/consent") {
       if (user.role !== "host")
         throw new HttpError(403, "Only host accounts can confirm permission.");
       const input = z.object({ consent: z.boolean() }).parse(data);
-      db.prepare("UPDATE users SET consent=? WHERE id=?").run(
+      await db.prepare("UPDATE users SET consent=? WHERE id=?").run(
         input.consent ? 1 : 0,
         user.id,
       );
-      log(user.id, "Permission-to-rent attestation updated");
+      await log(user.id, "Permission-to-rent attestation updated");
       return json({ ok: true });
     }
     requireEmail(user);
@@ -241,7 +241,7 @@ async function handle(
         (kind === "card" && user.card_status === "verified")
       )
         throw new HttpError(409, "This check is already complete.");
-      if (providerMode() === "demo") return json({ demo: true, kind });
+      if ((await providerMode()) === "demo") return json({ demo: true, kind });
       const url =
         kind === "identity"
           ? await startIdentity(user)
@@ -262,12 +262,12 @@ async function handle(
           "This test reservation is for seeker accounts.",
         );
       const room = reservationFor(data?.listingId);
-      if (providerMode() === "demo")
+      if ((await providerMode()) === "demo")
         return json({ demo: true, kind: "payment", listingId: room.listingId, title: room.title, amount: room.amountCents });
       return json({ url: await startCheckout(user, "payment", room) });
     }
     if (path === "demo/complete") {
-      if (providerMode() !== "demo") throw new HttpError(404, "Not found.");
+      if ((await providerMode()) !== "demo") throw new HttpError(404, "Not found.");
       const input = z
         .object({
           kind: z.enum(["identity", "card", "payment"]),
@@ -278,15 +278,15 @@ async function handle(
         if (!verified(user) || user.role !== "seeker")
           throw new HttpError(403, "Verify a seeker account first.");
         const room = reservationFor(data?.listingId);
-        transaction(() => {
-          const paid = db
+        await transaction(async (tx) => {
+          const paid = await tx
             .prepare(
               "SELECT id FROM payments WHERE user_id=? AND status='paid'",
             )
             .get(user.id);
           if (paid)
             throw new HttpError(409, "This reservation has already been paid.");
-          db.prepare(
+          await tx.prepare(
             "INSERT INTO payments(id,user_id,amount,status,created_at,listing_id) VALUES(?,?,?,?,?,?)",
           ).run(
             randomUUID(),
@@ -296,17 +296,20 @@ async function handle(
             Date.now(),
             room.listingId,
           );
-          log(
+          await tx.prepare(
+            "INSERT INTO activity(user_id,message,created_at) VALUES(?,?,?)",
+          ).run(
             user.id,
             input.outcome === "success"
               ? "Simulated reservation payment completed"
               : "Simulated card declined",
+            Date.now(),
           );
         });
       } else {
         const column =
           input.kind === "identity" ? "identity_status" : "card_status";
-        db.prepare(
+        await db.prepare(
           `UPDATE users SET ${column}=?${input.kind === "card" ? ",card_last4=?" : ""} WHERE id=?`,
         ).run(
           ...(input.kind === "card"
@@ -320,7 +323,7 @@ async function handle(
                 user.id,
               ]),
         );
-        log(
+        await log(
           user.id,
           `Simulated ${input.kind} check ${input.outcome === "success" ? "passed" : "needs another attempt"}`,
         );
