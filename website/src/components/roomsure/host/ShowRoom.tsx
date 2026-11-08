@@ -65,7 +65,7 @@ export function ShowRoom() {
 
       <div className="space-y-3 rounded-2xl border border-hairline p-4">
         <label htmlFor="room-tour" className="flex cursor-pointer items-start gap-3">
-          <input id="room-tour" type="checkbox" className="mt-1 size-4 accent-[var(--color-primary)]" checked={withTour}
+          <input id="room-tour" type="checkbox" aria-label="Add a 3D tour" className="mt-1 size-4 accent-[var(--color-primary)]" checked={withTour}
             onChange={(e) => hostActions.updateDraft({ withTour: e.target.checked })} />
           <span>
             <span className="flex items-center gap-1.5 font-semibold text-foreground"><Box className="size-4 text-primary" /> Add a 3D tour</span>
