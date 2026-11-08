@@ -23,6 +23,25 @@ Open http://localhost:3000. Create an account with a sample email and a unique p
 
 Accounts and sessions are real local application records in both modes. Only email delivery, identity/card checks and payment outcomes are simulated in demo mode. Never use an important or reused password for testing.
 
+## Deploy this backend independently on Render
+
+The `platform/` app can be deployed separately from the Vercel website. This does not change the website. The app stores accounts, sessions, and payment records in SQLite, so it needs a persistent disk. Render's Free web services have ephemeral filesystems and cannot attach persistent disks; use a paid web service for a durable SQLite deployment. See [Render's Free instance limitations](https://render.com/docs/free) and [persistent disk documentation](https://render.com/docs/disks).
+
+1. In Render, create a **Web Service** from the GitHub repository. Set the service root directory to `platform/`.
+2. Configure the build command as `npm ci && npm run build` and the start command as `npm run start`. The project requires Node.js 24 or newer; its production start script binds to `0.0.0.0` and uses Render's `PORT` environment variable.
+3. Choose a paid compute plan and attach a persistent disk mounted at `/var/data` (1 GB is enough for this demo database).
+4. Set these service variables:
+
+   ```dotenv
+   APP_URL=https://<your-render-domain>
+   PROVIDER_MODE=demo
+   DATABASE_PATH=/var/data/roomsure.sqlite
+   ```
+
+5. Open the Render service URL to use the platform app independently. Keep `PROVIDER_MODE=demo`; do not add real identity documents or payment details to this hackathon demo.
+
+This backend is not connected to the Vercel website. For a private GitHub repo, Render's GitHub integration must be authorized to access that repo; if it does not appear in your account, the repository owner may need to grant the Render GitHub App access. When integration is planned, route the website's `/api/*` requests to this service and set `APP_URL` to the website's origin so the Origin check accepts requests. Keep the frontend deployment unchanged until that integration is ready and verified.
+
 ## Stripe-backed test mode
 
 Set the following in `.env.local` and restart:
