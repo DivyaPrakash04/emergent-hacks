@@ -31,7 +31,7 @@ export function SwipeCard({ card, index, destination, flipped, onFlip, onSwipe, 
 
   function onDragEnd(_: unknown, info: PanInfo) {
     const width = ref.current?.offsetWidth ?? 360;
-    const far = Math.abs(info.offset.x) > width * 0.3;
+    const far = Math.abs(info.offset.x) > Math.min(width * 0.3, 140); // wide cards shouldn't need a longer drag
     const fast = Math.abs(info.velocity.x) > 600;
     if (far || fast) onSwipe(info.offset.x > 0 || (fast && info.velocity.x > 0) ? 1 : -1);
     setTimeout(() => (dragged.current = false), 0);
