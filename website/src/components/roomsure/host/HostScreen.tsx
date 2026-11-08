@@ -33,7 +33,7 @@ export function HostScreen() {
   const showDone = !issues.some((i) => i.field === "photos");
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-4 py-6 lg:py-10">
+    <div className="mx-auto max-w-2xl space-y-6 px-4 py-6 lg:max-w-6xl lg:py-10">
       <header className="space-y-2">
         <p className="text-[13px] font-semibold uppercase tracking-wide text-primary">List your room</p>
         <h1 className="text-3xl font-bold leading-tight text-foreground">Rent out a room people can trust</h1>
@@ -42,23 +42,31 @@ export function HostScreen() {
         </p>
       </header>
 
-      <Step n={1} title="Prove you're a real host" done={verified} note={verified ? "You're verified." : `${gateDone} of 4 done. Publishing stays locked until all four are done.`}>
-        <HostGate />
-      </Step>
-      <Step n={2} title="Describe the room" done={detailsDone} note="Price, location, dates, facilities and house rules.">
-        <RoomForm />
-      </Step>
-      <Step n={3} title="Show the room" done={showDone} note="At least one photo or a 3D tour.">
-        <ShowRoom />
-      </Step>
-      <Step n={4} title="Preview and publish" done={false} note={verified ? "See your room the way seekers will." : undefined}>
-        {!verified && (
-          <p className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-3 text-[14px] text-muted-foreground">
-            <Lock className="size-4 shrink-0" /> Finish step 1 to unlock publishing. You can fill in the room details meanwhile.
-          </p>
-        )}
-        <PublishPanel />
-      </Step>
+      {/* Laptops: the form on the left, the live preview pinned on the right. Phones: one column, preview last. */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start lg:gap-8">
+        <div className="space-y-6">
+          <Step n={1} title="Prove you're a real host" done={verified} note={verified ? "You're verified." : `${gateDone} of 4 done. Publishing stays locked until all four are done.`}>
+            <HostGate />
+          </Step>
+          <Step n={2} title="Describe the room" done={detailsDone} note="Price, location, dates, facilities and house rules.">
+            <RoomForm />
+          </Step>
+          <Step n={3} title="Show the room" done={showDone} note="At least one photo or a 3D tour.">
+            <ShowRoom />
+          </Step>
+        </div>
+        {/* The padding gives the card's shadow room inside the scroll box. */}
+        <div className="lg:sticky lg:top-20 lg:-mx-4 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto lg:px-4 lg:pb-10 lg:pt-4">
+          <Step n={4} title="Preview and publish" done={false} note={verified ? "See your room the way seekers will." : undefined}>
+            {!verified && (
+              <p className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-3 text-[14px] text-muted-foreground">
+                <Lock className="size-4 shrink-0" /> Finish step 1 to unlock publishing. You can fill in the room details meanwhile.
+              </p>
+            )}
+            <PublishPanel />
+          </Step>
+        </div>
+      </div>
       <PublishedRooms />
     </div>
   );

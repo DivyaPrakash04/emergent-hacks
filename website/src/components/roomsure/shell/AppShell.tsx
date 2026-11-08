@@ -11,8 +11,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const showNav = !SHELL_HIDDEN_PATHS.includes(pathname);
   const reduce = useReducedMotion();
 
+  // overflow-x-clip, not -hidden: "hidden" turns this div into a scroll box, which breaks every sticky panel inside.
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-screen overflow-x-clip">
       {showNav && <NavRail />}
       <div className={showNav ? "pb-20 lg:pb-0 lg:pl-24" : undefined}>
         <AppHeader hideWordmarkOnDesktop={showNav} />
