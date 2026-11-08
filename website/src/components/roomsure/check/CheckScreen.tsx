@@ -11,6 +11,7 @@ import { HighlightedText } from "./HighlightedText";
 import { SignalList } from "./SignalList";
 import { FactsTable } from "./FactsTable";
 import { CheckPriceBar } from "./CheckPriceBar";
+import { WhatWeCheck } from "./WhatWeCheck";
 
 export function CheckScreen() {
   const [text, setText] = useState("");
@@ -64,6 +65,8 @@ export function CheckScreen() {
         {loading && <p role="status" className="text-[14px] text-muted-foreground">Scanning for warning signs…</p>}
         {error && <p role="alert" className="text-[14px] text-destructive">{error}</p>}
       </div>
+
+      {!result && !loading && <WhatWeCheck />}
 
       {result && (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">

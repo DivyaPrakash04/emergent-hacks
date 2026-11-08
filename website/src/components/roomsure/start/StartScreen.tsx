@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useReducedMotion } from "motion/react";
 import { Sparkles, WifiOff } from "lucide-react";
 import { api } from "@/lib/roomsure/api";
 import { actions } from "@/lib/roomsure/state";
@@ -8,6 +9,7 @@ import type { Destination, IntakeResult } from "@/lib/roomsure/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PreferencesPanel } from "@/components/roomsure/preferences/PreferencesPanel";
+import { HeardSummary } from "./HeardSummary";
 
 export const EXAMPLES = [
   "I'm interning downtown June 1 to August 15. Budget around $900, $1,050 max. Commute ideally 20 minutes, 35 at most. I need a kitchen, furnished matters a lot, and I can live with up to 5 days' gap.",
@@ -25,6 +27,8 @@ export function StartScreen() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [prefs, setPrefs] = useState<DeckPreferences | null>(null);
   const [dest, setDest] = useState<Destination>("work");
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
 
   async function run(input: string) {
     if (!input.trim()) return;
@@ -42,14 +46,26 @@ export function StartScreen() {
     }
   }
 
+  // Phones: bring the result into view when it arrives. On laptops it's already beside the sentence.
+  useEffect(() => {
+    if (loading || !result || window.matchMedia("(min-width: 1024px)").matches) return;
+    resultsRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }, [result, loading, reduce]);
+
   function showRooms() {
     if (!prefs || !result) return;
     actions.setIntake(prefs, dest, result.source);
     navigate({ to: "/discover" });
   }
 
+  const showButton = (
+    <Button variant="hero" size="xl" className="w-full" onClick={showRooms}>Show my rooms</Button>
+  );
+
+  // Laptops: the sentence on the left, what we heard on the right, all on one screen.
+  // Phones: one column, and the result scrolls into view when it arrives.
   return (
-    <div className="mx-auto max-w-2xl space-y-8 px-4 py-8 lg:py-12">
+    <div className="mx-auto grid max-w-2xl gap-8 px-4 py-8 lg:max-w-6xl lg:grid-cols-2 lg:items-start lg:gap-12 lg:py-12">
       <section className="space-y-4">
         <p className="text-[13px] font-semibold uppercase tracking-wide text-primary">Step 1</p>
         <h1 className="text-3xl font-bold text-foreground lg:text-4xl">What do you need?</h1>
@@ -76,52 +92,74 @@ export function StartScreen() {
         {error && <p role="alert" className="text-[14px] text-destructive">{error}</p>}
       </section>
 
-      {loading && (
-        <div aria-busy="true" aria-label="Reading your needs" className="space-y-4 rounded-[var(--radius-card)] border border-hairline bg-surface p-5">
-          <p className="font-semibold text-primary">Reading your needs…</p>
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="space-y-2"><Skeleton className="h-4 w-1/3" /><Skeleton className="h-6 w-full" /></div>
-          ))}
-        </div>
-      )}
-
-      {!loading && result && prefs && (
-        <section className="space-y-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-[13px] font-semibold uppercase tracking-wide text-primary">Step 2</p>
-            {result.source === "claude" ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-[13px] font-semibold text-primary-foreground">
-                <Sparkles className="size-3.5" /> Read by Claude
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-[13px] font-semibold text-muted-foreground">
-                <WifiOff className="size-3.5" /> Read by rules (offline)
-              </span>
-            )}
+      <div ref={resultsRef} className="scroll-mt-20">
+        {loading && (
+          <div aria-busy="true" aria-label="Reading your needs" className="space-y-4 rounded-[var(--radius-card)] border border-hairline bg-surface p-5">
+            <p className="font-semibold text-primary">Reading your needs…</p>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="space-y-2"><Skeleton className="h-4 w-1/3" /><Skeleton className="h-6 w-full" /></div>
+            ))}
           </div>
-          <h2 className="text-2xl font-bold text-foreground">Here's what we heard</h2>
+        )}
 
-          {result.questions.map((q) => (
-            <div key={q.id} className="space-y-3 rounded-2xl border border-warm/40 bg-warm/10 p-4">
-              <p className="font-medium text-foreground">{q.text}</p>
-              <div className="flex gap-2">
-                <input aria-label={q.text} value={answers[q.id] ?? ""}
-                  onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
-                  className="h-11 flex-1 rounded-xl border border-hairline bg-surface px-3 text-[15px]" />
-                <Button variant="soft" onClick={() => {
-                  const next = `${text} ${answers[q.id] ?? ""}`.trim();
-                  setText(next);
-                  run(next);
-                }}>Add</Button>
-              </div>
+        {!loading && result && prefs && (
+          <section className="space-y-5">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-[13px] font-semibold uppercase tracking-wide text-primary">Step 2</p>
+              {result.source === "claude" ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-[13px] font-semibold text-primary-foreground">
+                  <Sparkles className="size-3.5" /> Read by Claude
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-[13px] font-semibold text-muted-foreground">
+                  <WifiOff className="size-3.5" /> Read by rules (offline)
+                </span>
+              )}
             </div>
-          ))}
+            <h2 className="text-2xl font-bold text-foreground">Here's what we heard</h2>
+            {/* The short version first, with the way forward; the full, editable panel follows. */}
+            <div className="space-y-3 rounded-[var(--radius-card)] bg-primary-soft/60 p-4">
+              <HeardSummary preferences={prefs} destination={dest} />
+              {showButton}
+              <p className="text-center text-[13px] text-muted-foreground">Or fine-tune any of these below first.</p>
+            </div>
 
-          <PreferencesPanel title="Your preferences" preferences={prefs} destination={dest}
-            onPreferences={setPrefs} onDestination={setDest}
-            footer={<Button variant="hero" size="xl" className="w-full" onClick={showRooms}>Show my rooms</Button>} />
-        </section>
-      )}
+            {result.questions.map((q) => (
+              <div key={q.id} className="space-y-3 rounded-2xl border border-warm/40 bg-warm/10 p-4">
+                <p className="font-medium text-foreground">{q.text}</p>
+                <div className="flex gap-2">
+                  <input aria-label={q.text} value={answers[q.id] ?? ""}
+                    onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
+                    className="h-11 flex-1 rounded-xl border border-hairline bg-surface px-3 text-[15px]" />
+                  <Button variant="soft" onClick={() => {
+                    const next = `${text} ${answers[q.id] ?? ""}`.trim();
+                    setText(next);
+                    run(next);
+                  }}>Add</Button>
+                </div>
+              </div>
+            ))}
+
+            <PreferencesPanel title="Your preferences" preferences={prefs} destination={dest}
+              onPreferences={setPrefs} onDestination={setDest}
+              footer={showButton} />
+          </section>
+        )}
+
+        {!loading && !result && (
+          <div className="hidden rounded-[var(--radius-card)] border border-dashed border-hairline p-6 lg:block">
+            <p className="text-[13px] font-semibold uppercase tracking-wide text-primary">Step 2</p>
+            <p className="mt-1 text-xl font-bold text-foreground">We turn your sentence into preferences</p>
+            <ul className="mt-4 list-disc space-y-1.5 pl-5 text-[15px] text-muted-foreground">
+              <li>Your budget and the most you'd pay</li>
+              <li>Your commute to work or campus</li>
+              <li>Move-in and move-out dates</li>
+              <li>Must-have facilities, like a kitchen</li>
+            </ul>
+            <p className="mt-4 text-[14px] text-muted-foreground">You can change every one before you see rooms. Try an example on the left.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
