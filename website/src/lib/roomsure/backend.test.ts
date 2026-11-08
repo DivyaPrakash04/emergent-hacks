@@ -65,6 +65,19 @@ describe("api: backend first, mocks when no backend answers", () => {
     expect(r.source).toBe("rules");
   });
 
+  it("falls back to local rules when the backend has a temporary server error", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ error: "Database unavailable" }, 503)));
+    const r = await api.parseIntake("Downtown internship, June to August, around $900, furnished.");
+    expect(r.source).toBe("rules");
+    expect(r.summary).toContain("Downtown internship");
+  });
+
+  it("keeps the seeded room inventory available from the frontend", async () => {
+    const listings = await api.getListings();
+    expect(listings.length).toBeGreaterThan(0);
+    expect(listings.some((room) => room.id === "fox-point")).toBe(true);
+  });
+
   it("falls back when /api isn't a backend (e.g. an HTML 404 from the preview server)", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("<!doctype html>Not found", { status: 404, headers: { "content-type": "text/html" } })));
     const r = await api.reserve("fox-point");
