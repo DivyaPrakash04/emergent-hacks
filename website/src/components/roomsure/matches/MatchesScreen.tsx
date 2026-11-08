@@ -4,6 +4,7 @@ import { useListings } from "@/lib/roomsure/queries";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { MatchRowItem } from "./MatchRowItem";
+import { HowMatchingWorks } from "./HowMatchingWorks";
 import { useMatchRows, type MatchStatus } from "./useMatchRows";
 
 const TABS: { key: MatchStatus; label: string; empty: string }[] = [
@@ -35,6 +36,8 @@ export function MatchesScreen() {
             <TabsContent key={t.key} value={t.key} className="mt-4">
               {list.length ? (
                 <ul className="space-y-3">{list.map((r) => <MatchRowItem key={r.listing.id} row={r} />)}</ul>
+              ) : t.key === "matched" ? (
+                <HowMatchingWorks />
               ) : (
                 <div className="space-y-4 rounded-[var(--radius-card)] border border-dashed border-hairline bg-surface p-8 text-center">
                   <Heart className="mx-auto size-8 text-primary" />

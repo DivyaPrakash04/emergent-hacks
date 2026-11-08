@@ -22,10 +22,13 @@ export interface RoomsureState {
   reservations: Record<string, Reservation>;
 }
 
+/** Maya is seeded fully verified (simulated), so the live demo skips the checks (MVP requirements, section 3). */
+const SEEDED_CHECKS: Record<CheckKey, boolean> = { email: true, id: true, card: true };
+
 export function defaultState(): RoomsureState {
   return {
     session: null,
-    checks: { email: true, id: true, card: false },
+    checks: { ...SEEDED_CHECKS },
     preferences: structuredClone(DEFAULT_PREFERENCES),
     destination: DEFAULT_DESTINATION,
     intakeSource: null,
@@ -57,7 +60,8 @@ function load(): RoomsureState {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (isValid(parsed)) return { ...defaultState(), ...parsed };
+      // Older saved state had the card check off; checks never go back to off, so keep Maya verified.
+      if (isValid(parsed)) return { ...defaultState(), ...parsed, checks: { ...parsed.checks, ...SEEDED_CHECKS } };
     }
   } catch {
     /* broken storage: fall through to defaults */
