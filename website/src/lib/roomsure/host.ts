@@ -176,14 +176,15 @@ export function publishBlockers(s: Pick<HostState, "profile" | "checks" | "right
 export { SAMPLE_TOUR_PATH };
 
 /** Cover image for a room listed with a 3D tour but no photos, so the card never shows a broken image. */
-export function placeholderPhoto(neighborhood: string): string {
+export function placeholderPhoto(neighborhood: string, subtitle = "Walk through it in 3D"): string {
   const safe = neighborhood.replace(/[<>&"']/g, "");
+  const safeSubtitle = subtitle.replace(/[<>&"']/g, "");
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">` +
     `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDF0EC"/><stop offset="1" stop-color="#FDEBD2"/></linearGradient></defs>` +
     `<rect width="1200" height="900" fill="url(#g)"/>` +
     `<text x="600" y="430" text-anchor="middle" font-family="Figtree, Arial, sans-serif" font-size="64" font-weight="700" fill="#0E6B66">${safe}</text>` +
-    `<text x="600" y="510" text-anchor="middle" font-family="Figtree, Arial, sans-serif" font-size="40" fill="#1D2B33">Walk through it in 3D</text></svg>`;
+    `<text x="600" y="510" text-anchor="middle" font-family="Figtree, Arial, sans-serif" font-size="40" fill="#1D2B33">${safeSubtitle}</text></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
