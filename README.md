@@ -1,5 +1,7 @@
 ﻿# Roomsure
 
+**Try it live:** [roomsure-hackathon.vercel.app](https://roomsure-hackathon.vercel.app). Click **Continue as Maya (demo)**; no sign-up needed.
+
 Roomsure helps people find a room for one to six months, and check it before they pay. Tell it what you need in one sentence. It ranks rooms by your own trade-offs, explains every card, lets you walk the room in 3D, and flags scam signals in listings you found elsewhere.
 
 ## Why we are building it
