@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Heart } from "lucide-react";
-import { listingsQuery } from "@/lib/roomsure/queries";
+import { useListings } from "@/lib/roomsure/queries";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { MatchRowItem } from "./MatchRowItem";
@@ -14,7 +13,7 @@ const TABS: { key: MatchStatus; label: string; empty: string }[] = [
 ];
 
 export function MatchesScreen() {
-  const { data: listings } = useSuspenseQuery(listingsQuery);
+  const listings = useListings();
   const rows = useMatchRows(listings);
   return (
     <div className="mx-auto max-w-2xl space-y-5 px-4 py-6 lg:py-10">

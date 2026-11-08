@@ -26,6 +26,19 @@ export interface RoomListing extends Omit<Listing, "commuteMinutes"> {
   fairPrice: FairPrice;
   /** Present when a sample 3D scan exists. */
   scanUrl?: string;
+  /** Extra facts a host fills in on "List your room". */
+  details?: ListingDetails;
+  /** True for rooms published from "List your room" (stored in this browser for now). */
+  hostPublished?: boolean;
+}
+
+export interface ListingDetails {
+  roomType: "private" | "shared" | "studio";
+  /** USD, paid only after viewing. 0 means no deposit. */
+  deposit: number;
+  utilitiesIncluded: boolean;
+  minStayMonths: number;
+  rules: { smoking: boolean; pets: boolean; guests: "fine" | "ask" | "no"; quietHours: string };
 }
 
 export interface Session {

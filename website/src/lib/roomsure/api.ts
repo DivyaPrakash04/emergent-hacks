@@ -3,7 +3,10 @@
 // scam check, and simulated reservations stored server-side. If no backend answers
 // (Lovable preview, backend not running), each call falls back to the local mock
 // below, so the screens always work. Rooms, ranking and host replies stay local.
+// Rooms published on "List your room" live in this browser (host.ts) until the backend
+// has host routes, so their host replies and reservations stay local too.
 import { LISTINGS } from "./data/listings";
+import { isHostPublished, publishedRooms } from "./host";
 import { parseIntakeRules } from "./intake";
 import { checkListingRules } from "./check";
 import {
@@ -40,7 +43,7 @@ const mock = {
   },
   async reserve(listingId: string): Promise<Reservation> {
     await wait(600);
-    const l = LISTINGS.find((x) => x.id === listingId);
+    const l = [...LISTINGS, ...publishedRooms()].find((x) => x.id === listingId);
     if (!l) throw new Error("That room isn't available anymore.");
     return {
       listingId,
@@ -83,10 +86,15 @@ export const api = {
   /** Simulated: resolves after a short pause. */
   async simulateHostReply(listingId: string): Promise<HostReply> {
     await wait(1400);
+    if (isHostPublished(listingId)) {
+      return publishedRooms().find((r) => r.id === listingId)?.host.trust.level === "verified" ? "accepted" : "reviewing";
+    }
     return ACCEPTING_HOSTS.has(listingId) ? "accepted" : "reviewing";
   },
   /** Simulated payment recorded on the server, priced from the room id (never from the browser). */
   async reserve(listingId: string): Promise<Reservation> {
+    // Rooms published in this browser have no server-side price yet: reserve them locally.
+    if (isHostPublished(listingId)) return mock.reserve(listingId);
     return withFallback(() => reserveOnBackend(listingId), () => mock.reserve(listingId));
   },
   async resetDemo(): Promise<void> {
