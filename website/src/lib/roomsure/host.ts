@@ -48,6 +48,8 @@ export interface HostDraft {
   description: string;
   photos: string[];
   withTour: boolean;
+  /** Same-origin tour path of the room scanned from the host's video ("" until one is attached). */
+  tourUrl: string;
 }
 
 export interface HostProfile {
@@ -81,6 +83,7 @@ export function emptyDraft(): HostDraft {
     description: "",
     photos: [],
     withTour: false,
+    tourUrl: "",
   };
 }
 
@@ -206,7 +209,8 @@ export function toRoomListing(s: Pick<HostState, "profile" | "rightToRent" | "dr
     description: d.description.trim(),
     host: { name: s.profile?.name.split(" ")[0] || "Host", trust: trustFor(s.rightToRent!), repliesIn: "a few hours" },
     fairPrice: fair ? { label: fair.label, tone: fair.tone, typical: fair.typical } : { label: "Fair price", tone: "good", typical: d.price! },
-    ...(d.withTour ? { scanUrl: opts.origin + SAMPLE_TOUR_PATH } : {}),
+    // A room scanned from the host's own video wins over the team's sample tour.
+    ...(d.withTour ? { scanUrl: opts.origin + (d.tourUrl || SAMPLE_TOUR_PATH) } : {}),
     details: {
       roomType: d.roomType,
       deposit: d.deposit ?? 0,

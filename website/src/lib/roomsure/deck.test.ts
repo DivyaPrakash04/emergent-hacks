@@ -2,12 +2,19 @@ import { describe, expect, it } from "vitest";
 import { buildDeck } from "./deck";
 import { DEFAULT_PREFERENCES as P } from "./defaults";
 import { LISTINGS } from "./data/listings";
+import { roomTourPath } from "./scans";
 
 describe("demo deck", () => {
   it("ranks Sunny room in Fox Point #1 with score 77", () => {
     const top = buildDeck(P, LISTINGS, "work").deck[0]!;
     expect(top.listing.title).toBe("Sunny room in Fox Point");
     expect(top.score).toBe(77);
+  });
+
+  it("the scanned dorm single sits mid-deck with its own walkable bedroom", () => {
+    const dorm = buildDeck(P, LISTINGS, "work").deck.find((c) => c.listing.id === "elmhurst-dorm")!;
+    expect(dorm.rank).toBe(3);
+    expect(dorm.listing.scanUrl).toBe(roomTourPath("bedroom"));
   });
 
   it("the math rows add up to the shown score", () => {
@@ -29,6 +36,6 @@ describe("demo deck", () => {
   it("swiped rooms leave the deck but keep their ranks", () => {
     const d = buildDeck(P, LISTINGS, "work", ["fox-point"]);
     expect(d.deck[0]!.rank).toBe(2);
-    expect(d.total).toBe(4);
+    expect(d.total).toBe(5);
   });
 });

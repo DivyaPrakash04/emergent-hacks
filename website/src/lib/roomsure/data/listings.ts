@@ -1,7 +1,8 @@
 // STAND-IN: written in Lovable until Claude Code pushes the real brain files. Safe to replace.
 import type { RoomListing } from "../types";
-import { SAMPLE_TOUR_PATH } from "../scans";
+import { roomTourPath, SAMPLE_TOUR_PATH } from "../scans";
 import bedroomSun from "@/assets/welcome-room-1.jpg";
+import dormBedroom from "@/assets/room-bedroom-3d.jpg";
 import deskNook from "@/assets/welcome-room-2.jpg";
 import kitchen from "@/assets/welcome-room-3.jpg";
 import studio from "@/assets/room-studio.jpg";
@@ -73,6 +74,21 @@ export const LISTINGS: RoomListing[] = [
     description: "Slanted ceilings, a skylight and a desk. Unfurnished apart from the bed frame.",
     host: { name: "Priya", trust: verified, repliesIn: "a few hours" },
     fairPrice: { label: "Fair price", tone: "good", typical: 870 },
+  },
+  {
+    id: "elmhurst-dorm",
+    title: "Dorm single in Elmhurst",
+    neighborhood: "Elmhurst",
+    pricePerMonth: 895,
+    commute: { work: 28, campus: 30 },
+    availableFrom: "2027-06-05",
+    availableTo: "2027-08-31",
+    facilities: ["furnished", "kitchen", "laundry"],
+    photos: [dormBedroom],
+    description: "Snug single in a student house off Smith Street: bed, desk and a window over the yard. Scanned in 3D, so you can walk the room before you ask to visit.",
+    host: { name: "Noah", trust: verified, repliesIn: "about an hour" },
+    fairPrice: { label: "Fair price", tone: "good", typical: 870 },
+    scanUrl: roomTourPath("bedroom"),
   },
   {
     id: "college-hill-suite",

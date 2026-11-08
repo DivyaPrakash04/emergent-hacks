@@ -1,14 +1,15 @@
 import { useRef, useState } from "react";
 import { Box, ImagePlus, X } from "lucide-react";
 import { hostActions, useHost } from "@/lib/roomsure/host";
-import { Button } from "@/components/ui/button";
 import { shrinkPhoto } from "./photos";
+import { ScanFromVideo } from "./ScanFromVideo";
 
 const MAX_PHOTOS = 3;
 
 export function ShowRoom() {
   const photos = useHost((s) => s.draft.photos);
   const withTour = useHost((s) => s.draft.withTour);
+  const tourUrl = useHost((s) => s.draft.tourUrl);
   const fileRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -66,17 +67,17 @@ export function ShowRoom() {
       <div className="space-y-3 rounded-2xl border border-hairline p-4">
         <label htmlFor="room-tour" className="flex cursor-pointer items-start gap-3">
           <input id="room-tour" type="checkbox" aria-label="Add a 3D tour" className="mt-1 size-4 accent-[var(--color-primary)]" checked={withTour}
-            onChange={(e) => hostActions.updateDraft({ withTour: e.target.checked })} />
+            onChange={(e) => hostActions.updateDraft(e.target.checked ? { withTour: true } : { withTour: false, tourUrl: "" })} />
           <span>
             <span className="flex items-center gap-1.5 font-semibold text-foreground"><Box className="size-4 text-primary" /> Add a 3D tour</span>
             <span className="block text-[13px] text-muted-foreground">
-              Seekers can walk through the room before they ask to visit. In this demo, the tour uses the team's sample 3D room.
+              {tourUrl
+                ? "Seekers can walk through the room before they ask to visit. This tour is the room scanned from your video."
+                : "Seekers can walk through the room before they ask to visit. In this demo, the tour uses the team's sample 3D room — or scan your own below."}
             </span>
           </span>
         </label>
-        <Button asChild variant="soft" className="min-h-11">
-          <a href="/host/index.html" target="_blank" rel="noopener">Make a tour from your own phone video</a>
-        </Button>
+        <ScanFromVideo />
       </div>
     </div>
   );
