@@ -13,7 +13,7 @@ export const API_BASE = env["VITE_ROOMSURE_API"] ?? "/api";
 /** VITE_ROOMSURE_BACKEND=off forces the local mocks (useful in the Lovable preview). */
 export const BACKEND_ENABLED = env["VITE_ROOMSURE_BACKEND"] !== "off";
 
-/** No backend answered at all: use the mock instead. */
+/** Backend is unavailable or has a temporary server failure: use the demo fallback. */
 export class BackendUnavailable extends Error {}
 
 /** The backend answered with an error the user should see (e.g. "already reserved"). */
@@ -39,6 +39,10 @@ export async function callBackend<T>(path: string, body?: unknown, method: "GET"
     throw new BackendUnavailable(`no backend at ${API_BASE} (status ${res.status})`);
   }
   const data = (await res.json()) as T & { error?: string };
+  // Preserve a usable demo if the upstream backend is deployed but temporarily
+  // unhealthy (for example, a cold start or database outage). Do not hide 4xx
+  // application errors such as duplicate reservations, validation, or rate limits.
+  if (res.status >= 500) throw new BackendUnavailable(`backend temporarily unavailable (${res.status})`);
   if (!res.ok) throw new BackendError(data.error ?? `Request failed (${res.status})`, res.status);
   return data;
 }
