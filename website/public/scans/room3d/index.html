@@ -1,0 +1,82 @@
+<title>Common Kitchen 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: full-bleed 3D canvas, floating HUD chrome top-left, view dock bottom-center */
+  :root {
+    --bg: #ece7db;
+    --panel: rgba(252, 250, 244, 0.86);
+    --fg: #2a2721;
+    --muted: #6f695c;
+    --accent: #b98a2e;
+    --edge: rgba(42, 39, 33, 0.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15151a; --panel: rgba(28, 28, 34, 0.82); --fg: #ece9e0;
+      --muted: #a9a496; --accent: #e0b45c; --edge: rgba(236, 233, 224, 0.16);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15151a; --panel: rgba(28, 28, 34, 0.82); --fg: #ece9e0;
+    --muted: #a9a496; --accent: #e0b45c; --edge: rgba(236, 233, 224, 0.16);
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #toast {
+    position: fixed; top: calc(env(safe-area-inset-top, 0px) + 16px);
+    left: 50%; transform: translateX(-50%);
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 999px;
+    padding: 8px 18px; font-size: 13px; letter-spacing: 0.03em; color: var(--fg);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 2px 14px rgba(0,0,0,0.10);
+    z-index: 4; pointer-events: none; max-width: 90vw; text-align: center;
+    transition: opacity 0.45s; opacity: 1;
+  }
+  #toast.gone { opacity: 0; }
+  #toast.pulse { animation: tpulse 1.3s ease-in-out infinite; }
+  @keyframes tpulse { 50% { opacity: 0.55; } }
+  @media (prefers-reduced-motion: reduce) { #toast.pulse { animation: none; } }
+  [hidden] { display: none !important; }
+  #loading {
+    position: fixed; inset: 0; display: grid; place-items: center;
+    background: var(--bg); z-index: 5; transition: opacity 0.3s;
+  }
+  #loading .spin {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 3px solid var(--edge); border-top-color: var(--accent);
+    animation: spin 0.9s linear infinite; margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(1turn); } }
+  @media (prefers-reduced-motion: reduce) { #loading .spin { animation: none; } }
+  #loading p { color: var(--muted); }
+  #errchip {
+    position: fixed; top: calc(env(safe-area-inset-top, 0px) + 70px);
+    left: max(16px, env(safe-area-inset-left, 0px));
+    background: #8e2f28; color: #fff; border-radius: 8px; padding: 8px 12px;
+    font-size: 12px; max-width: 70vw; z-index: 6;
+  }
+</style>
+
+<canvas id="scene"></canvas>
+
+<div id="toast" hidden></div>
+
+<div id="loading"><div><div class="spin"></div><p>Generating room…</p></div></div>
+<div id="errchip" hidden></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="./js/main.js"></script>
