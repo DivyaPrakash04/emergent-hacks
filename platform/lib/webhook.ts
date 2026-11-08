@@ -1,17 +1,17 @@
 import type Stripe from "stripe";
-import { db, log, transaction } from "./db";
+import { db, transaction, type DatabaseHandle } from "./db";
 import { stripe } from "./providers";
 // Re-fetch provider objects to avoid stale, out-of-order event payloads.
 // Ownership is bound to server-created rows; metadata alone cannot grant access.
 export async function processEvent(event: Stripe.Event, client = stripe()) {
   if (event.livemode) throw new Error("Live events are disabled");
-  if (db.prepare("SELECT id FROM events WHERE id=?").get(event.id)) return;
-  let apply = () => {};
+  if (await db.prepare("SELECT id FROM events WHERE id=?").get(event.id)) return;
+  let apply = async (_tx: DatabaseHandle) => {};
   if (event.type.startsWith("identity.verification_session.")) {
     const object = event.data.object as Stripe.Identity.VerificationSession;
-    const flow = db
+    const flow = (await db
       .prepare("SELECT * FROM flows WHERE provider_id=? AND kind='identity'")
-      .get(object.id) as { id: string; user_id: string } | undefined;
+      .get(object.id)) as { id: string; user_id: string } | undefined;
     if (!flow) throw new Error("Unknown identity session");
     const current = await client.identity.verificationSessions.retrieve(
       object.id,
@@ -24,12 +24,12 @@ export async function processEvent(event: Stripe.Event, client = stripe()) {
           : current.status === "canceled"
             ? "canceled"
             : "pending";
-    apply = () => {
-      db.prepare("UPDATE users SET identity_status=? WHERE id=?").run(
+    apply = async (tx) => {
+      await tx.prepare("UPDATE users SET identity_status=? WHERE id=?").run(
         status,
         flow.user_id,
       );
-      db.prepare("UPDATE flows SET status=? WHERE id=?").run(
+      await tx.prepare("UPDATE flows SET status=? WHERE id=?").run(
         status === "verified"
           ? "complete"
           : status === "canceled"
@@ -37,25 +37,27 @@ export async function processEvent(event: Stripe.Event, client = stripe()) {
             : "pending",
         flow.id,
       );
-      log(flow.user_id, `Identity verification: ${status}`);
+      await tx.prepare(
+        "INSERT INTO activity(user_id,message,created_at) VALUES(?,?,?)",
+      ).run(flow.user_id, `Identity verification: ${status}`, Date.now());
     };
   } else if (event.type.startsWith("checkout.session.")) {
     const object = event.data.object as Stripe.Checkout.Session;
     const current = await client.checkout.sessions.retrieve(object.id, {
       expand: ["setup_intent.payment_method"],
     });
-    const flow = db
+    const flow = (await db
       .prepare("SELECT * FROM flows WHERE provider_id=? AND kind='card'")
-      .get(object.id) as { id: string; user_id: string } | undefined;
-    const payment = db
+      .get(object.id)) as { id: string; user_id: string } | undefined;
+    const payment = (await db
       .prepare("SELECT * FROM payments WHERE provider_id=?")
-      .get(object.id) as
+      .get(object.id)) as
       { id: string; user_id: string; amount: number } | undefined;
     if (!flow && !payment) throw new Error("Unknown checkout session");
     const owner = flow?.user_id || payment!.user_id;
-    const user = db
+    const user = (await db
       .prepare("SELECT customer_id FROM users WHERE id=?")
-      .get(owner) as { customer_id: string };
+      .get(owner)) as { customer_id: string };
     if (
       current.customer !== user.customer_id ||
       current.client_reference_id !== owner
@@ -69,18 +71,20 @@ export async function processEvent(event: Stripe.Event, client = stripe()) {
         setup?.status === "succeeded" &&
         method?.card
       ) {
-        apply = () => {
-          db.prepare(
+        apply = async (tx) => {
+          await tx.prepare(
             "UPDATE users SET card_status='verified',card_last4=? WHERE id=?",
           ).run(method.card!.last4, owner);
-          db.prepare("UPDATE flows SET status='complete' WHERE id=?").run(
+          await tx.prepare("UPDATE flows SET status='complete' WHERE id=?").run(
             flow.id,
           );
-          log(owner, "Payment method confirmed in Stripe test mode");
+          await tx.prepare(
+            "INSERT INTO activity(user_id,message,created_at) VALUES(?,?,?)",
+          ).run(owner, "Payment method confirmed in Stripe test mode", Date.now());
         };
       } else if (current.status === "expired")
-        apply = () => {
-          db.prepare("UPDATE flows SET status='expired' WHERE id=?").run(
+        apply = async (tx) => {
+          await tx.prepare("UPDATE flows SET status='expired' WHERE id=?").run(
             flow.id,
           );
         };
@@ -89,24 +93,27 @@ export async function processEvent(event: Stripe.Event, client = stripe()) {
         throw new Error("Payment amount mismatch");
       const paid = current.payment_status === "paid";
       if (paid || current.status === "expired")
-        apply = () => {
-          db.prepare("UPDATE payments SET status=? WHERE id=?").run(
+        apply = async (tx) => {
+          await tx.prepare("UPDATE payments SET status=? WHERE id=?").run(
             paid ? "paid" : "expired",
             payment.id,
           );
-          log(
+          await tx.prepare(
+            "INSERT INTO activity(user_id,message,created_at) VALUES(?,?,?)",
+          ).run(
             owner,
             paid
               ? "Test reservation payment received"
               : "Test checkout expired",
+            Date.now(),
           );
         };
     }
   }
-  transaction(() => {
-    if (db.prepare("SELECT id FROM events WHERE id=?").get(event.id)) return;
-    apply();
-    db.prepare("INSERT INTO events(id,created_at) VALUES(?,?)").run(
+  await transaction(async (tx) => {
+    if (await tx.prepare("SELECT id FROM events WHERE id=?").get(event.id)) return;
+    await apply(tx);
+    await tx.prepare("INSERT INTO events(id,created_at) VALUES(?,?)").run(
       event.id,
       Date.now(),
     );
