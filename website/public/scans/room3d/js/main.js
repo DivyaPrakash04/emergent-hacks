@@ -3,13 +3,22 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-import { S } from './spec.js';
+import { S, loadSpec } from './spec.js';
 import { buildShell } from './shell.js';
 import { buildKitchen } from './kitchen.js';
 import { buildFurniture } from './furniture.js';
 import { buildDecor } from './decor.js';
 import { buildLighting } from './lighting.js';
 import { initWalk } from './walk.js';
+
+// Spec-driven: resolve the room before anything reads S (top-level await).
+try {
+  await loadSpec();
+} catch (e) {
+  const p = document.querySelector('#loading p');
+  if (p) p.textContent = e.message;
+  throw e;
+}
 
 const canvas = document.getElementById('scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -99,7 +108,7 @@ if (!reduceMotion) {
       m: o,
       toPos: o.position.clone(), toRot: o.rotation.clone(),
       fromPos, fromRot,
-      delay: rand(0, 1.3), dur: rand(0.9, 1.5),
+      delay: rand(0, 0.55), dur: rand(0.5, 0.85),
     });
   });
   for (const p of parts) { p.m.position.copy(p.fromPos); p.m.rotation.copy(p.fromRot); }
@@ -111,7 +120,7 @@ function finishAssembly() {
   parts.length = 0;
   if (assembling) {
     hideToast();
-    setTimeout(() => { if (!walk.active) walk.enter(); }, 1000); // auto walk-in
+    setTimeout(() => { if (!walk.active) walk.enter(); }, 400); // auto walk-in
   }
   assembling = false;
 }
@@ -231,7 +240,7 @@ function resize() {
   }
 }
 renderOnce();
-if (reduceMotion) setTimeout(() => { if (!walk.active) walk.enter(); }, 1000);
+if (reduceMotion) setTimeout(() => { if (!walk.active) walk.enter(); }, 400);
 let firstFrame = true;
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {

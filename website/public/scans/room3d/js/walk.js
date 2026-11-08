@@ -9,28 +9,17 @@ const SPEED = 2.1;       // walk m/s
 const RUN = 3.5;         // shift-run m/s
 const LOOK = 0.0024;     // rad per px (locked)
 
+// Colliders come straight from the spec as raw footprints; inflate by player radius.
 function buildColliders() {
-  // [x0, x1, z0, z1], already inflated by the player radius
-  const c = [
-    [0.50 - R, S.room.w + 1, -1, 0.80 + R],          // kitchen run: fridge → counters
-    [S.stub.x0 - R, S.room.w + 1, -1, S.stub.z + 0.05 + R], // pantry stub + nook
-    [S.banquette.x0 - R, S.banquette.x1 + R, 3.55 - R, S.room.d + 1], // tables + banquette
-    [S.trash.x - S.trash.r - R, S.trash.x + S.trash.r + R,
-     S.trash.z - S.trash.r - R, S.trash.z + S.trash.r + R],           // trash can
-    [-1, 0.24 + R, S.radiator.z0 - R, S.radiator.z1 + R],             // radiator
-  ];
-  for (const ch of [...S.chairs.birch, ...S.chairs.cream]) {
-    c.push([ch.x - 0.24 - R, ch.x + 0.24 + R, ch.z - 0.24 - R, ch.z + 0.24 + R]);
-  }
-  return c;
+  return (S.colliders || []).map(b => [b[0] - R, b[1] + R, b[2] - R, b[3] + R]);
 }
 
 export function initWalk({ camera, orbit, canvas, onChange }) {
   const CO = buildColliders();
   const keys = new Set();
-  const pos = new THREE.Vector3(2.60, EYE, 2.55);
+  const pos = new THREE.Vector3(S.walkSpawn.x, EYE, S.walkSpawn.z);
   let active = false, hadLock = false;
-  let yaw = 0, pitch = -0.04;           // yaw 0 faces the kitchen wall (-Z)
+  let yaw = S.walkSpawn.yaw || 0, pitch = -0.04; // yaw 0 faces wall K (-Z)
 
   const hit = (x, z) => CO.some(b => x > b[0] && x < b[1] && z > b[2] && z < b[3]);
   const clampWalls = () => {
@@ -167,6 +156,12 @@ export function initWalk({ camera, orbit, canvas, onChange }) {
   return {
     get active() { return active; },
     enter, exit, update,
+    // Re-derive colliders from S.colliders (the editor rewrites them after edits).
+    refreshColliders() {
+      const next = buildColliders();
+      CO.length = 0;
+      CO.push(...next);
+    },
     // QA helper: simulate `seconds` of held input synchronously
     step(f, s, seconds) {
       const n = Math.max(1, Math.ceil(seconds / 0.016));

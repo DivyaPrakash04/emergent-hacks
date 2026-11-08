@@ -1,6 +1,8 @@
 // STAND-IN: written in Lovable until Claude Code pushes the real brain files. Safe to replace.
 import type { RoomListing } from "../types";
+import { roomTourPath, SAMPLE_TOUR_PATH } from "../scans";
 import bedroomSun from "@/assets/welcome-room-1.jpg";
+import dormBedroom from "@/assets/room-bedroom-3d.jpg";
 import deskNook from "@/assets/welcome-room-2.jpg";
 import kitchen from "@/assets/welcome-room-3.jpg";
 import studio from "@/assets/room-studio.jpg";
@@ -24,7 +26,7 @@ export const LISTINGS: RoomListing[] = [
     description: "Top-floor room in a triple-decker with two big windows, a shared kitchen and a porch.",
     host: { name: "Dana", trust: verified, repliesIn: "about an hour" },
     fairPrice: { label: "Fair price", tone: "good", typical: 980 },
-    scanUrl: "/scans/fox-point",
+    scanUrl: SAMPLE_TOUR_PATH,
   },
   {
     id: "downcity-studio",
@@ -39,7 +41,7 @@ export const LISTINGS: RoomListing[] = [
     description: "Small studio with its own kitchenette, a short walk to the office district.",
     host: { name: "Marcus", trust: verified, repliesIn: "a few hours" },
     fairPrice: { label: "Fair price", tone: "good", typical: 1060 },
-    scanUrl: "/scans/downcity-studio",
+    scanUrl: SAMPLE_TOUR_PATH,
   },
   {
     id: "federal-hill-sublet",
@@ -74,6 +76,21 @@ export const LISTINGS: RoomListing[] = [
     fairPrice: { label: "Fair price", tone: "good", typical: 870 },
   },
   {
+    id: "elmhurst-dorm",
+    title: "Dorm single in Elmhurst",
+    neighborhood: "Elmhurst",
+    pricePerMonth: 895,
+    commute: { work: 28, campus: 30 },
+    availableFrom: "2027-06-05",
+    availableTo: "2027-08-31",
+    facilities: ["furnished", "kitchen", "laundry"],
+    photos: [dormBedroom],
+    description: "Snug single in a student house off Smith Street: bed, desk and a window over the yard. Scanned in 3D, so you can walk the room before you ask to visit.",
+    host: { name: "Noah", trust: verified, repliesIn: "about an hour" },
+    fairPrice: { label: "Fair price", tone: "good", typical: 870 },
+    scanUrl: roomTourPath("bedroom"),
+  },
+  {
     id: "college-hill-suite",
     title: "Private suite on College Hill",
     neighborhood: "College Hill",
@@ -86,7 +103,7 @@ export const LISTINGS: RoomListing[] = [
     description: "Room with its own bathroom in a Victorian, steps from Thayer Street.",
     host: { name: "Helen", trust: verified, repliesIn: "about an hour" },
     fairPrice: { label: "Fair price", tone: "good", typical: 1120 },
-    scanUrl: "/scans/college-hill-suite",
+    scanUrl: SAMPLE_TOUR_PATH,
   },
   {
     id: "cranston-room",

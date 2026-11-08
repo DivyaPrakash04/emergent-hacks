@@ -5,6 +5,7 @@
 import { useSyncExternalStore } from "react";
 import { checkListingRules } from "./check";
 import { FACILITY_KEYS } from "./rankListings";
+import { SAMPLE_TOUR_PATH } from "./scans";
 import type { FairPrice, ListingDetails, RoomListing, TrustInfo } from "./types";
 
 export const HOST_STORAGE_KEY = "roomsure-host-v1";
@@ -47,6 +48,8 @@ export interface HostDraft {
   description: string;
   photos: string[];
   withTour: boolean;
+  /** Same-origin tour path of the room scanned from the host's video ("" until one is attached). */
+  tourUrl: string;
 }
 
 export interface HostProfile {
@@ -80,6 +83,7 @@ export function emptyDraft(): HostDraft {
     description: "",
     photos: [],
     withTour: false,
+    tourUrl: "",
   };
 }
 
@@ -172,17 +176,18 @@ export function publishBlockers(s: Pick<HostState, "profile" | "checks" | "right
   return blockers;
 }
 
-export const SAMPLE_TOUR_PATH = "/scans/room3d/index.html";
+export { SAMPLE_TOUR_PATH };
 
 /** Cover image for a room listed with a 3D tour but no photos, so the card never shows a broken image. */
-export function placeholderPhoto(neighborhood: string): string {
+export function placeholderPhoto(neighborhood: string, subtitle = "Walk through it in 3D"): string {
   const safe = neighborhood.replace(/[<>&"']/g, "");
+  const safeSubtitle = subtitle.replace(/[<>&"']/g, "");
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">` +
     `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDF0EC"/><stop offset="1" stop-color="#FDEBD2"/></linearGradient></defs>` +
     `<rect width="1200" height="900" fill="url(#g)"/>` +
     `<text x="600" y="430" text-anchor="middle" font-family="Figtree, Arial, sans-serif" font-size="64" font-weight="700" fill="#0E6B66">${safe}</text>` +
-    `<text x="600" y="510" text-anchor="middle" font-family="Figtree, Arial, sans-serif" font-size="40" fill="#1D2B33">Walk through it in 3D</text></svg>`;
+    `<text x="600" y="510" text-anchor="middle" font-family="Figtree, Arial, sans-serif" font-size="40" fill="#1D2B33">${safeSubtitle}</text></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
@@ -204,7 +209,8 @@ export function toRoomListing(s: Pick<HostState, "profile" | "rightToRent" | "dr
     description: d.description.trim(),
     host: { name: s.profile?.name.split(" ")[0] || "Host", trust: trustFor(s.rightToRent!), repliesIn: "a few hours" },
     fairPrice: fair ? { label: fair.label, tone: fair.tone, typical: fair.typical } : { label: "Fair price", tone: "good", typical: d.price! },
-    ...(d.withTour ? { scanUrl: opts.origin + SAMPLE_TOUR_PATH } : {}),
+    // A room scanned from the host's own video wins over the team's sample tour.
+    ...(d.withTour ? { scanUrl: opts.origin + (d.tourUrl || SAMPLE_TOUR_PATH) } : {}),
     details: {
       roomType: d.roomType,
       deposit: d.deposit ?? 0,

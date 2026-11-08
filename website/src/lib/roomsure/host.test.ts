@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { api } from "./api";
 import { buildDeck } from "./deck";
 import { DEFAULT_PREFERENCES } from "./defaults";
+import { roomTourPath } from "./scans";
 import {
   emptyDraft,
   getHostState,
@@ -121,6 +122,17 @@ describe("published rooms reach seekers", () => {
       { id: "host-tour", origin: "" },
     );
     expect(tourOnly.photos[0]).toMatch(/^data:image\/svg\+xml/); // tour only: a placeholder cover, never a broken image
+  });
+
+  it("a room scanned from the host's video wins over the sample tour", () => {
+    hostActions.signInDemo();
+    const draft = { ...goodDraft(), photos: [], withTour: true, tourUrl: roomTourPath("bathroom-v2") };
+    expect(validateDraft(draft)).toEqual([]); // a scanned tour stands in for photos too
+    const room = toRoomListing(
+      { profile: getHostState().profile, rightToRent: "owner", draft },
+      { id: "host-scan", origin: "https://preview.example" },
+    );
+    expect(room.scanUrl).toBe("https://preview.example/scans/room3d/index.html?room=bathroom-v2");
   });
 
   it("a Caution room ranks lower than the same room from a verified host", () => {

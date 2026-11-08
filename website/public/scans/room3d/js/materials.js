@@ -65,15 +65,23 @@ export const PAL = {
 // ---------- texture builders ----------
 export const TEX = {
   // Whole-floor texture (non-repeating; plane UV 0..1). wM/hM = floor size in meters.
-  floor(wM, hM) {
+  // Floor texture. opts (all optional, from the room spec's `floor` field):
+  // base hex, spots [hex...], seamEvery meters (0 disables seams), seamAlpha.
+  floor(wM, hM, opts = {}) {
     const px = 160;
+    const base = opts.base || PAL.floorBase;
+    const spots = (opts.spots && opts.spots.length ? opts.spots : PAL.floorSpots);
+    const seamEvery = opts.seamEvery ?? 0.92;
+    const seamAlpha = opts.seamAlpha ?? 0.10;
     return makeCanvasTexture(Math.round(wM * px), Math.round(hM * px), (ctx, w, h) => {
-      mottle(ctx, w, h, PAL.floorBase, PAL.floorSpots, Math.round(w * h / 450), 13, 32, 11, 0.24); // 8-20cm clouds
-      mottle(ctx, w, h, 'rgba(0,0,0,0)', ['#53565a', '#2d3034', '#5c5649'], Math.round(w * h / 60), 1, 3, 23, 0.42); // speckle
-      ctx.strokeStyle = 'rgba(0,0,0,0.10)'; ctx.lineWidth = 2;
-      const step = 0.92 * px;
-      for (let x = step; x < w; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-      for (let y = step; y < h; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      mottle(ctx, w, h, base, spots, Math.round(w * h / 450), 13, 32, 11, 0.24); // 8-20cm clouds
+      mottle(ctx, w, h, 'rgba(0,0,0,0)', spots.slice(0, 3), Math.round(w * h / 60), 1, 3, 23, 0.35); // speckle
+      if (seamEvery > 0.02) {
+        ctx.strokeStyle = `rgba(0,0,0,${seamAlpha})`; ctx.lineWidth = seamEvery < 0.3 ? 1 : 2;
+        const step = seamEvery * px;
+        for (let x = step; x < w; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+        for (let y = step; y < h; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      }
     });
   },
 
