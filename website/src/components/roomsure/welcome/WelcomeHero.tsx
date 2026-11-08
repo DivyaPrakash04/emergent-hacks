@@ -24,7 +24,7 @@ export function WelcomeHero() {
           </Button>
           <CreateAccountDialog />
           <Button asChild variant="outline" size="xl" className="w-full sm:w-auto">
-            <a href="/host">List your room</a>
+            <Link to="/list-your-room">List your room</Link>
           </Button>
         </div>
         <div className="mt-10">

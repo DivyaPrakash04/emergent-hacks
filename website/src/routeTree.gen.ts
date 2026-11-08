@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CheckRouteImport } from './routes/check'
 import { Route as DiscoverRouteImport } from './routes/discover'
-import { Route as HostRouteImport } from './routes/host'
+import { Route as ListYourRoomRouteImport } from './routes/list-your-room'
 import { Route as PassportRouteImport } from './routes/passport'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as MatchesIndexRouteImport } from './routes/matches.index'
@@ -34,9 +34,9 @@ const DiscoverRoute = DiscoverRouteImport.update({
   path: '/discover',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HostRoute = HostRouteImport.update({
-  id: '/host',
-  path: '/host',
+const ListYourRoomRoute = ListYourRoomRouteImport.update({
+  id: '/list-your-room',
+  path: '/list-your-room',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PassportRoute = PassportRouteImport.update({
@@ -69,7 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/check': typeof CheckRoute
   '/discover': typeof DiscoverRoute
-  '/host': typeof HostRoute
+  '/list-your-room': typeof ListYourRoomRoute
   '/passport': typeof PassportRoute
   '/start': typeof StartRoute
   '/matches/$id': typeof MatchesIdRoute
@@ -80,7 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/check': typeof CheckRoute
   '/discover': typeof DiscoverRoute
-  '/host': typeof HostRoute
+  '/list-your-room': typeof ListYourRoomRoute
   '/passport': typeof PassportRoute
   '/start': typeof StartRoute
   '/matches/$id': typeof MatchesIdRoute
@@ -92,7 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/check': typeof CheckRoute
   '/discover': typeof DiscoverRoute
-  '/host': typeof HostRoute
+  '/list-your-room': typeof ListYourRoomRoute
   '/passport': typeof PassportRoute
   '/start': typeof StartRoute
   '/matches/$id': typeof MatchesIdRoute
@@ -105,7 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/check'
     | '/discover'
-    | '/host'
+    | '/list-your-room'
     | '/passport'
     | '/start'
     | '/matches/$id'
@@ -116,7 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/check'
     | '/discover'
-    | '/host'
+    | '/list-your-room'
     | '/passport'
     | '/start'
     | '/matches/$id'
@@ -127,7 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/check'
     | '/discover'
-    | '/host'
+    | '/list-your-room'
     | '/passport'
     | '/start'
     | '/matches/$id'
@@ -139,7 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CheckRoute: typeof CheckRoute
   DiscoverRoute: typeof DiscoverRoute
-  HostRoute: typeof HostRoute
+  ListYourRoomRoute: typeof ListYourRoomRoute
   PassportRoute: typeof PassportRoute
   StartRoute: typeof StartRoute
   MatchesIdRoute: typeof MatchesIdRoute
@@ -170,11 +170,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DiscoverRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/host': {
-      id: '/host'
-      path: '/host'
-      fullPath: '/host'
-      preLoaderRoute: typeof HostRouteImport
+    '/list-your-room': {
+      id: '/list-your-room'
+      path: '/list-your-room'
+      fullPath: '/list-your-room'
+      preLoaderRoute: typeof ListYourRoomRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/passport': {
@@ -219,7 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CheckRoute: CheckRoute,
   DiscoverRoute: DiscoverRoute,
-  HostRoute: HostRoute,
+  ListYourRoomRoute: ListYourRoomRoute,
   PassportRoute: PassportRoute,
   StartRoute: StartRoute,
   MatchesIdRoute: MatchesIdRoute,

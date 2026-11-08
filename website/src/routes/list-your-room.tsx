@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { HostScreen } from "@/components/roomsure/host/HostScreen";
 
-export const Route = createFileRoute("/host")({
+export const Route = createFileRoute("/list-your-room")({
   head: () => ({
     meta: [
       { title: "List your room · Roomsure" },
